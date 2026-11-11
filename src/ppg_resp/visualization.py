@@ -240,7 +240,8 @@ def plot_estimate_vs_reference(table: pd.DataFrame, level: str = "recording", no
     ax.set(xlabel="Reference respiratory rate (breaths/min)", ylabel="PPG-derived respiratory rate (breaths/min)")
     ax.set_aspect("equal", adjustable="box")
     ax.grid(alpha=0.25)
-    ax.legend(fontsize=7, frameon=False, loc="upper left")
+    if len(values):
+        ax.legend(fontsize=7, frameon=False, loc="upper left")
     return fig
 
 

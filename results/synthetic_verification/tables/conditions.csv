@@ -1,0 +1,6 @@
+condition,n_recordings,mae,rmse,bias,sd_error
+simulated 12/min,8,0.0027,0.0031,-0.0007,0.0032
+simulated 16/min,8,0.0033,0.0043,0.0,0.0046
+simulated 20/min,8,0.0041,0.0047,-0.0,0.0051
+simulated 24/min,8,0.0029,0.0037,0.0028,0.0025
+simulated 8/min,8,0.0033,0.0041,0.0003,0.0043

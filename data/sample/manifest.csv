@@ -1,0 +1,4 @@
+# Example study manifest. Both recordings are SYNTHETIC test signals.
+recording_id,participant_id,session_id,condition,ppg_file,fs_hz,channel,reference_type,reference_file,n_breaths,count_duration_s,time_offset_s,reference_source
+SYN_rr12,SYN01,S1,simulated_12,SYNTHETIC_rr12.csv,100,ir,markers,,,,,simulated markers
+SYN_rr18,SYN01,S1,simulated_18,SYNTHETIC_rr18.csv,100,ir,markers,,,,,simulated markers

@@ -47,7 +47,13 @@ def window_pairs(
     condition: str = "unspecified",
     rule: str = "interval",
 ) -> pd.DataFrame:
-    """Pair every analysis window with the reference rate of the same time span."""
+    """Pair every analysis window with the reference rate of the same time span.
+
+    A ``count`` reference (N breaths in T seconds) has no time resolution: its
+    single whole-recording rate is paired with every window, which assumes the
+    breathing rate was steady. Only recording-level results are meaningful then.
+    """
+    whole = reference.rate() if reference.kind == "count" else None
     rows = []
     for w in result.windows:
         rows.append(
@@ -61,7 +67,7 @@ def window_pairs(
                 "status": w.status,
                 "sqi": w.sqi,
                 "methods_agree": w.indicators.get("methods_agree"),
-                "rr_ref": reference.rate(w.t_start_s, w.t_end_s, rule=rule),
+                "rr_ref": whole if reference.kind == "count" else reference.rate(w.t_start_s, w.t_end_s, rule=rule),
                 "rr_est": w.rr_bpm,
                 "rr_candidate": w.rr_candidate_bpm,
             }

@@ -1,0 +1,97 @@
+{
+  "coverage": {
+    "n_windows": 440,
+    "n_windows_with_reference": 440,
+    "n_accepted": 440,
+    "accepted_fraction": 1.0,
+    "n_recordings": 40,
+    "n_participants": 8,
+    "status_counts": {
+      "OK": 440
+    }
+  },
+  "recording_level": {
+    "mae": 0.003248062729249912,
+    "rmse": 0.004003917856552537,
+    "bias": 0.00046368627185728873,
+    "sd_error": 0.004027642084690572,
+    "loa_low": -0.0074304922141362325,
+    "loa_high": 0.00835786475785081,
+    "pearson_r": 0.9999997631912173,
+    "pearson_p": 8.756261755332978e-122,
+    "spearman_rho": 0.9801022269307021,
+    "spearman_p": 2.7028714728633735e-28,
+    "n": 40
+  },
+  "recording_level_ci": {
+    "mae": [
+      0.002490811391272079,
+      0.003948563760852885
+    ],
+    "bias": [
+      -0.00042083083129946077,
+      0.001338875284980485
+    ]
+  },
+  "window_level_accepted": {
+    "mae": 0.021747980249971457,
+    "rmse": 0.028175198006617382,
+    "bias": 0.0004636862718577025,
+    "sd_error": 0.02820344985325842,
+    "loa_low": -0.054815075440528806,
+    "loa_high": 0.05574244798424421,
+    "pearson_r": 0.9999876136134616,
+    "pearson_p": NaN,
+    "spearman_rho": 0.9797984275876845,
+    "spearman_p": NaN,
+    "n": 440
+  },
+  "window_level_all_candidates": {
+    "mae": 0.021747980249971457,
+    "rmse": 0.028175198006617382,
+    "bias": 0.0004636862718577025,
+    "sd_error": 0.02820344985325842,
+    "loa_low": -0.054815075440528806,
+    "loa_high": 0.05574244798424421,
+    "pearson_r": 0.9999876136134616,
+    "pearson_p": NaN,
+    "spearman_rho": 0.9797984275876845,
+    "spearman_p": NaN,
+    "n": 440
+  },
+  "bland_altman_recordings": {
+    "n": 40,
+    "bias": 0.00046368627185728873,
+    "sd": 0.004027642084690572,
+    "loa_low": -0.0074304922141362325,
+    "loa_high": 0.00835786475785081,
+    "bias_ci": [
+      -0.0008244161576788592,
+      0.0017517887013934366
+    ],
+    "loa_low_ci": [
+      -0.009661551067445751,
+      -0.005199433360826714
+    ],
+    "loa_high_ci": [
+      0.006126805904541292,
+      0.010588923611160327
+    ],
+    "slope": 0.00014343148476872304,
+    "slope_p": 0.20665244327324092
+  },
+  "bland_altman_windows_repeated": {
+    "n": 440,
+    "n_groups": 8,
+    "bias": 0.0004636862718577025,
+    "sd": 0.02839879740818044,
+    "loa_low": -0.055197956648175964,
+    "loa_high": 0.056125329191891365,
+    "sd_within": 0.02839879740818044,
+    "sd_between": 0.0
+  },
+  "notes": [
+    "Window-level statistics are descriptive: overlapping windows of one recording are not independent, so no p-values are given for them.",
+    "Several recordings per participant: recording-level p-values ignore this clustering and are optimistic. Prefer the cluster-bootstrap intervals."
+  ]
+}
