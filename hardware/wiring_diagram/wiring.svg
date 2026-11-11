@@ -66,5 +66,5 @@
     <text x="450" y="314">I2C clock (yellow)</text>
   </g>
 
-  <text x="30" y="412" fill="#555" font-size="12">Power the sensor from 3V3, not 5V. GPIO numbers are set at the top of ppg_streamer.ino and can be changed.</text>
+  <text x="30" y="412" fill="#555" font-size="12">Power the sensor from 3V3, not 5V. GPIO numbers are set at the top of main.py and can be changed.</text>
 </svg>

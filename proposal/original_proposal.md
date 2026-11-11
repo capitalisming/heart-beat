@@ -78,7 +78,7 @@ small accepted subset would not support the hypothesis.
 
 | Hardware | Software |
 |----------|----------|
-| ESP32-S3-WROOM-1 development board | Arduino core for ESP32, SparkFun MAX3010x library |
+| ESP32-S3-WROOM-1 development board | MicroPython firmware, Thonny IDE |
 | MAX30102 pulse-oximetry breakout | Python 3, NumPy, SciPy, pandas, Matplotlib |
 | Breadboard, DuPont wires, USB cable | pytest, Git/GitHub |
 

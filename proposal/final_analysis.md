@@ -14,13 +14,14 @@ expectations.
 | Respiratory signal and rate estimation | Achieved (software) | Four estimators; simulated rates 7–28 /min recovered within 0.5 /min in tests |
 | Signal-quality rejection | Achieved (software) | Statuses with reasons; flat, noise-only, too-short, low-rate and gapped inputs handled without a false number in tests |
 | Agreement statistics | Achieved (software) | MAE, RMSE, bias, SD, Pearson, Spearman, Bland–Altman incl. repeated measures; checked against hand calculations |
-| Reproducible repository | Achieved | 152 passing tests, central configuration, documented protocol |
+| Acquisition firmware | Written, unverified on hardware | MicroPython driver and streamer; driver tested against a simulated MAX30102 |
+| Reproducible repository | Achieved | 166 passing tests, central configuration, documented protocol |
 
 ## 2. Which objectives were not achieved?
 
 | Objective | Status | What is missing |
 |-----------|--------|-----------------|
-| Working acquisition device | **Not achieved** | Parts are available; the device has not been assembled, and the firmware has not been compiled or run |
+| Working acquisition device | **Not achieved** | Parts are available; the device has not been assembled, and the firmware has not been run on the board |
 | Recordings with ground truth | **Not achieved** | No participant has been measured |
 | Quantitative answer to the research question | **Not achieved** | Depends on the two rows above |
 | Photographs and demonstration video | **Not achieved** | Require the built device |
@@ -50,8 +51,9 @@ expectations.
 5. **Dependence between windows.** Overlapping windows would inflate the
    apparent sample size, so the evaluation uses one pair per recording,
    clusters by participant, and withholds intervals for small samples.
-6. **No toolchain for the firmware in the development environment.** The
-   sketch could only be checked against the library header, not compiled.
+6. **No board available during development.** The firmware could only be
+   tested against a software model of the sensor's registers and FIFO, which
+   cannot reveal wiring, timing or bus problems.
 
 ## 4. Results obtained
 

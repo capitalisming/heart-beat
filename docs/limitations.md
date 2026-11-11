@@ -5,8 +5,10 @@
 1. **No human data has been collected with this device.** Every numerical
    result in the repository comes from simulated signals. The research
    question is unanswered.
-2. **The hardware is unbuilt and the firmware uncompiled.** It was checked
-   against the library's API and the sensor's register map, not on a board.
+2. **The hardware is unbuilt and the firmware has not run on a board.** The
+   sensor driver is tested against a simulated MAX30102 (register values,
+   FIFO decoding, overflow counting); wiring, timing and the real I2C bus are
+   not covered by that.
 3. **Synthetic tests are optimistic by construction.** The simulator has a
    perfectly steady breathing rate, a fixed pulse shape and white noise. Real
    breathing wanders, pulse shape changes with posture and temperature, and

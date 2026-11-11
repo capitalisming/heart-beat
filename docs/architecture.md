@@ -8,8 +8,8 @@ a stage is a function, and every intermediate result is an object you can plot.
 
 ```mermaid
 flowchart LR
-    subgraph Device["Device (firmware, C++)"]
-        S[MAX30102<br/>PPG sensor] -- I2C --> M[ESP32-S3<br/>ppg_streamer.ino]
+    subgraph Device["Device (MicroPython firmware)"]
+        S[MAX30102<br/>PPG sensor] -- I2C --> M[ESP32-S3<br/>main.py + max30102.py]
         B[BOOT button<br/>breath marker] --> M
     end
     M -- "USB serial, CSV lines" --> R[record_serial.py]

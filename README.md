@@ -6,9 +6,9 @@
 
 | | |
 |-|-|
-| **Software** | Complete, 152 automated tests passing |
+| **Software** | Complete, 166 automated tests passing |
 | **Verification on simulated signals** | Done ([report](results/synthetic_verification/report.md)) |
-| **Hardware (ESP32-S3 + MAX30102)** | Designed; firmware written, not yet compiled or run on a board |
+| **Hardware (ESP32-S3 + MAX30102)** | Designed; MicroPython firmware written and tested against a simulated sensor, not yet run on a board |
 | **Experiment on people** | Not yet performed, so **the research question is still open** |
 
 ## 1. Project Title
@@ -100,8 +100,12 @@ Module table, interfaces and the detailed pipeline diagram:
 
 ![Wiring diagram](hardware/wiring_diagram/wiring.svg)
 
-Firmware, build settings, data-stream format and bring-up checklist:
-[hardware/README.md](hardware/README.md). No photographs exist yet because
+The board runs MicroPython firmware installed with Thonny
+([hardware/firmware/micropython/](hardware/firmware/micropython/)); an Arduino
+sketch producing the same stream is kept as an alternative. Firmware
+description, data-stream format and bring-up checklist:
+[hardware/README.md](hardware/README.md). Step-by-step Thonny guide (Russian):
+[docs/thonny_guide_ru.md](docs/thonny_guide_ru.md). No photographs exist yet because
 the device has not been assembled; none are faked. No 3D-printed parts are
 used (explained in the hardware README).
 
@@ -111,21 +115,21 @@ The software also runs without any hardware on recorded files.
 
 - Python ≥ 3.9 (developed on 3.14)
 - numpy, scipy, pandas, matplotlib, pyyaml, pyserial; pytest for the tests
-- For the firmware: Arduino IDE 2.x or `arduino-cli`, core *esp32 by
-  Espressif*, library *SparkFun MAX3010x Pulse and Proximity Sensor Library*
+- For the board: [Thonny](https://thonny.org) and MicroPython for ESP32-S3
+  (installed from within Thonny); the firmware needs no extra libraries
 
 ## 9. Installation
 
 ```bash
-git clone <repository-url>
-cd ppg-respiratory-estimator
+git clone https://github.com/capitalisming/heart-beat.git
+cd heart-beat
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 python -m pytest
 ```
 
-Expected last line: `152 passed`.
+Expected last line: `166 passed`.
 
 ## 10. Usage
 
@@ -322,7 +326,8 @@ Complete list: [docs/limitations.md](docs/limitations.md).
 - Raw recordings are never modified; every result is recomputed from them.
 - Simulations use fixed random seeds; `scripts/synthetic_verification.py`
   regenerates `results/synthetic_verification/` and `data/sample/`.
-- `python -m pytest` runs 152 tests covering each module, the listed edge
+- `python -m pytest` runs 166 tests covering each module, the sensor driver
+  against a simulated MAX30102, the listed edge
   cases (empty files, gaps, irregular timestamps, wrong sampling rate,
   artifacts, no pulse, no modulation) and the statistics.
 - The experiment is specified in advance in
@@ -362,7 +367,8 @@ Complete list: [docs/limitations.md](docs/limitations.md).
 11. Addison PS, Watson JN, Mestek ML, Mecca RS. Developing an algorithm for pulse oximetry derived respiratory rate (RRoxi): a healthy volunteer study. *J Clin Monit Comput.* 2012;26(1):45–51. doi:10.1007/s10877-011-9332-y
 12. Welch PD. The use of fast Fourier transform for the estimation of power spectra: a method based on time averaging over short, modified periodograms. *IEEE Trans Audio Electroacoust.* 1967;15(2):70–73. doi:10.1109/TAU.1967.1161901
 
-Sensor and library: Maxim Integrated, *MAX30102 High-Sensitivity Pulse
-Oximeter and Heart-Rate Sensor for Wearable Health* (datasheet); SparkFun
-MAX3010x Sensor Library, <https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library>.
+Sensor and tools: Maxim Integrated, *MAX30102 High-Sensitivity Pulse
+Oximeter and Heart-Rate Sensor for Wearable Health* (datasheet); MicroPython,
+<https://micropython.org>; Thonny, <https://thonny.org>; SparkFun MAX3010x
+Sensor Library (Arduino alternative), <https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library>.
 Optional dataset: BIDMC PPG and Respiration Dataset, <https://physionet.org/content/bidmc/> [6].

@@ -312,7 +312,7 @@ Rules the code enforces:
 
 | | What it shows | State |
 |-|---------------|-------|
-| Unit tests on synthetic signals | The code implements the method correctly, including failure handling | Done: see `tests/`, `results/synthetic_verification/` |
+| Unit tests on synthetic signals and a simulated sensor | The code implements the method correctly, including failure handling | Done: see `tests/`, `results/synthetic_verification/` |
 | Public dataset of real PPG (BIDMC) | The code copes with real waveforms from a different sensor and population | Prepared (`scripts/prepare_bidmc.py`), not run |
 | Own experiment with the MAX30102 build | The answer to the research question | Not yet performed |
 

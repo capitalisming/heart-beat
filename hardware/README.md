@@ -1,10 +1,14 @@
 # Hardware
 
-**Status: designed, not yet built or tested by the repository authors.**
-The firmware was checked line by line against the public API of the SparkFun
-library and the MAX30102 register map, but it has not been compiled or run on
-a board. Nothing in this folder is a photograph of a working device. Work
-through the bring-up checklist below and record what you observe.
+**Status: designed, not yet built or tested on a board by the repository authors.**
+The MicroPython sensor driver is tested on the PC against a register-level
+simulation of the MAX30102 (`tests/test_firmware.py`), which checks the
+configuration bytes and FIFO decoding but not wiring, timing or the real I2C
+bus. Nothing in this folder is a photograph of a working device. Work through
+the bring-up checklist below and record what you observe.
+
+Step-by-step instructions for Thonny (in Russian):
+[docs/thonny_guide_ru.md](../docs/thonny_guide_ru.md).
 
 ## Bill of materials
 
@@ -32,9 +36,8 @@ button once per breath (see `docs/experiment_protocol.md`).
 | SCL          | GPIO 9       | yellow |
 | INT          | not connected | — |
 
-GPIO 8/9 are the default I2C pins of the Arduino core for "ESP32S3 Dev
-Module". The ESP32-S3 can route I2C to almost any GPIO: if you use other
-pins, change `PIN_I2C_SDA` / `PIN_I2C_SCL` at the top of the sketch.
+The ESP32-S3 can route I2C to almost any GPIO: if you use other pins, change
+`PIN_SDA` / `PIN_SCL` at the top of `main.py` and `check_sensor.py`.
 
 Things to check on your particular parts (they vary between sellers):
 
@@ -52,40 +55,59 @@ Things to check on your particular parts (they vary between sellers):
 
 ## Firmware
 
-`firmware/ppg_streamer/ppg_streamer.ino`
+### MicroPython (primary, for Thonny): `firmware/micropython/`
+
+| File | Purpose |
+|------|---------|
+| `max30102.py` | Sensor driver, no external libraries: reset, configuration, FIFO read-out with loss counting |
+| `main.py` | Runs at power-up; streams raw samples and breath markers over USB serial |
+| `check_sensor.py` | Bring-up test: I2C scan, part ID, measured sample rate, signal level |
+| `plot_pulse.py` | Live pulse wave for Thonny's Plotter (viewing only) |
 
 | Item | Value |
 |------|-------|
-| Toolchain | Arduino IDE 2.x or `arduino-cli`, core "esp32 by Espressif Systems" |
-| Board setting | "ESP32S3 Dev Module" |
-| Library | "SparkFun MAX3010x Pulse and Proximity Sensor Library" (Library Manager) |
-| Serial | 115200 baud, 8N1 |
+| Runtime | MicroPython for ESP32-S3 (generic "ESP32_GENERIC_S3" build), installed from Thonny |
+| Libraries | None beyond MicroPython's built-in `machine` and `time` |
 | Output rate | 100 samples/s (400 sps internal ÷ 4 on-chip averaging) |
 | Resolution | 18 bit (411 µs LED pulse), ADC full scale 4096 nA |
-| LED current | register 0x1F ≈ 6 mA; adjustable in the sketch |
+| LED current | register 0x1F ≈ 6 mA; `LED_CURRENT` in `main.py` |
+| FIFO | Roll-over disabled, so dropped samples are counted by the chip and reported |
 
-USB note: boards with two USB-C sockets expose a USB-UART bridge ("UART"/"COM")
-and the chip's native USB. Use the UART socket, or, when using the native USB
-socket, enable *Tools → USB CDC On Boot* so that `Serial` goes to that port.
+Register values written by `MAX30102.setup()`:
 
-### Main functions
+| Register | Value | Meaning |
+|----------|-------|---------|
+| 0x09 MODE_CONFIG | 0x40, then 0x03 | Soft reset, then SpO2 mode (red + IR) |
+| 0x08 FIFO_CONFIG | 0x40 | 4-sample averaging, roll-over off |
+| 0x0A SPO2_CONFIG | 0x2F | ADC range 4096 nA, 400 sps, 411 µs / 18 bit |
+| 0x0C, 0x0D LED PA | 0x1F | Red and IR LED current |
+
+Main functions:
 
 | Function | Purpose |
 |----------|---------|
-| `startSensor()` | Finds the sensor on I2C, resets and configures it; returns `false` if it does not answer |
-| `printHeader()` | Prints the configuration and the CSV header so every log is self-describing |
-| `pollMarkerButton()` | Debounced detection of a button press → breath marker |
-| `drainFifo()` | Reads the FIFO overflow counter, pulls all waiting samples and prints one line each |
-| `loop()` | Retries a missing sensor every second; re-initialises it if no samples arrive for 0.5 s |
+| `MAX30102.is_connected()` | True if the part ID register reads 0x15; never raises when the bus is dead |
+| `MAX30102.setup()` | Resets and configures the sensor (table above) |
+| `MAX30102.read_fifo()` | Returns the waiting samples and the number the chip had to drop |
+| `MAX30102.ir()` / `.red()` | Decode one 18-bit value from the FIFO bytes |
+| `run()` in `main.py` | Main loop: (re)initialise sensor, poll button, drain FIFO, print lines, recover from faults |
+
+### Arduino (alternative): `firmware/arduino_alternative/`
+
+The same data stream implemented as an Arduino sketch, for anyone who prefers
+the Arduino IDE (core "esp32 by Espressif Systems", board "ESP32S3 Dev
+Module", library "SparkFun MAX3010x Pulse and Proximity Sensor Library"). Its
+calls were checked against the library header; it has not been compiled. Use
+one firmware or the other, not both.
 
 ### Data stream
 
 ```
-# ppg_streamer 1.0 | ESP32-S3 + MAX30102
-# fs_nominal_hz=100.0 sample_rate_sps=400 sample_average=4 pulse_width_us=411 adc_range_na=4096 led_current_reg=0x1F
+# ppg_streamer-micropython 1.0 | ESP32-S3 + MAX30102
+# fs_nominal_hz=100 led_current_reg=0x1F
 sample_index,device_us,ir,red,marker
-0,2011934,118211,95310,0
-1,2012470,118205,95301,0
+0,20114,118211,95310,0
+1,20114,118205,95301,0
 ```
 
 - `sample_index` is the time base: `t = sample_index / fs`. Samples lost in the
@@ -107,15 +129,19 @@ has to deliver unmodified samples with a trustworthy time base.
 ## Bring-up checklist
 
 1. Wire as above; connect USB. The board's power LED should light.
-2. Flash the sketch. Open a serial monitor at 115200 baud.
-3. Expected: the two `#` header lines, then about 100 data lines per second.
-   If you see `# ERROR MAX30102 not found`, recheck wiring and supply.
-4. Without a finger, `ir` is small; with a fingertip resting lightly on the
-   sensor it rises to tens of thousands of counts or more and shows a ripple
-   at the heart rate. If it sits at 262143 the ADC is saturated: lower
-   `LED_CURRENT`. If the ripple is only a few counts, raise it.
-5. Press BOOT: one line should show `marker` = 1.
-6. Run `python scripts/record_serial.py --port <port> --duration 60 --analyze`
+2. Install MicroPython from Thonny and upload `max30102.py`, `check_sensor.py`
+   and `plot_pulse.py`.
+3. Run `check_sensor.py`. Expected: device `0x57` found, part ID correct,
+   about 100 samples per second, no lost samples. If nothing is found, recheck
+   wiring and supply.
+4. Without a finger the IR level is low; with a fingertip resting lightly on
+   the sensor it rises to tens of thousands of counts or more. If it sits at
+   262143 the ADC is saturated: lower `LED_CURRENT`. If the pulse ripple in
+   `plot_pulse.py` is only a few counts, raise it.
+5. Upload `main.py`, reset the board, and check that pressing BOOT produces
+   one line with `marker` = 1.
+6. Close Thonny, then run
+   `python scripts/record_serial.py --port <port> --duration 60 --analyze`
    and confirm that the reported sampling rate is close to 100 Hz and that the
    heart rate matches a manual pulse count.
 7. Photograph the assembled device and add the pictures to `photos/`.
