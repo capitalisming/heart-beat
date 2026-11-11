@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ipynb_checkpoints/
+.DS_Store
+build/
+dist/
+
+# Participant recordings are personal data: keep them out of version control
+# unless they are anonymised and you have consent to publish them.
+data/raw/*
+data/reference/*
+!data/raw/README.md
+!data/reference/README.md
+
+# Third-party datasets are downloaded on demand, never committed.
+data/external/
+
+# Regenerable outputs of real-data runs.
+results/runs/

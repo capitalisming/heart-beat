@@ -1,0 +1,57 @@
+# PPG Respiratory Estimator - central configuration.
+# Every value here is a research setting, not a clinical constant.
+# See docs/methodology.md for the reasoning behind each default.
+
+sensor:
+  name: MAX30102
+  # Reflective raw counts fall when blood volume rises, so the systolic
+  # "peak" is a minimum of the raw trace. Inverting restores the usual
+  # orientation (systole = maximum).
+  invert: true
+  valid_min: 1          # 0 counts = no data
+  valid_max: 262142     # 18-bit ADC full scale is 262143 (saturation)
+
+preprocessing:
+  lowpass_hz: 8.0             # noise suppression for amplitude measurement
+  pulse_band_hz: [0.5, 4.0]   # 30-240 bpm, used for beat *detection* only
+  filter_order: 3
+  min_fs_hz: 20.0
+  max_interp_gap_s: 0.3       # longer gaps are never bridged
+  timestamp_jitter_tol: 0.05  # relative; above this the signal is resampled
+  fs_mismatch_tol: 0.05
+  hampel_window: 7            # samples
+  hampel_k: 6.0
+  artifact_window_s: 2.0
+  artifact_high_ratio: 3.0
+  artifact_low_ratio: 0.2
+
+pulse:
+  min_hr_bpm: 35.0
+  max_hr_bpm: 200.0
+  envelope_window_s: 4.0
+  min_prominence: 1.0         # in units of the local signal SD
+  refine_window_s: 0.10
+  ibi_tolerance: 0.30         # relative deviation from local median IBI
+  amp_ratio_low: 0.33
+  amp_ratio_high: 3.0
+  local_beats: 11
+
+respiratory:
+  feature: am                 # am (primary) | bw | fm (comparison only)
+  resample_hz: 4.0
+  interpolation: linear       # linear | pchip
+  max_beat_gap_s: 3.0
+  band_hz: [0.1, 0.5]         # 6-30 breaths/min: resting adults, see docs
+  filter_order: 2
+  window_s: 32.0
+  step_s: 8.0
+  primary_method: fft         # fft | welch | autocorr | peak_count
+
+quality:
+  min_beats: 16
+  min_coverage: 0.8
+  min_regularity: 0.7
+  min_cycles: 3.0             # window must hold this many cycles of band low edge
+  min_band_width_hz: 0.05
+  sqi_threshold: 50.0         # heuristic, to be calibrated on real recordings
+  agreement_tol_bpm: 3.0
