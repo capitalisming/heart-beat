@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 430" font-family="Helvetica, Arial, sans-serif" font-size="14">
+  <title>Wiring diagram: ESP32-S3-WROOM-1 dev board to MAX30102 breakout</title>
+  <rect width="860" height="430" fill="#ffffff"/>
+  <text x="30" y="34" font-size="18" font-weight="bold" fill="#1a1a1a">Wiring: ESP32-S3-WROOM-1 dev board ↔ MAX30102 breakout (I2C)</text>
+  <text x="30" y="56" fill="#555">Schematic drawing, not a photograph. 4 female–female or male–female DuPont wires via the breadboard.</text>
+
+  <!-- ESP32-S3 board -->
+  <rect x="40" y="90" width="280" height="290" rx="10" fill="#1d3557" stroke="#0b1d33" stroke-width="2"/>
+  <rect x="110" y="110" width="140" height="90" rx="4" fill="#c9ced6" stroke="#6b7280"/>
+  <text x="180" y="150" text-anchor="middle" font-size="13" fill="#1a1a1a">ESP32-S3-</text>
+  <text x="180" y="168" text-anchor="middle" font-size="13" fill="#1a1a1a">WROOM-1</text>
+  <text x="180" y="360" text-anchor="middle" fill="#ffffff" font-size="13">USB to computer (power + serial)</text>
+  <rect x="150" y="372" width="60" height="16" rx="3" fill="#9ca3af"/>
+  <circle cx="80" cy="330" r="9" fill="#e5e7eb" stroke="#6b7280"/>
+  <text x="96" y="335" fill="#ffffff" font-size="12">BOOT button = GPIO0</text>
+  <text x="96" y="351" fill="#cbd5e1" font-size="11">(breath marker)</text>
+
+  <!-- ESP32 pins -->
+  <g font-size="13" fill="#ffffff" text-anchor="end">
+    <text x="296" y="235">3V3</text>
+    <text x="296" y="265">GND</text>
+    <text x="296" y="295">GPIO 8 (SDA)</text>
+    <text x="296" y="325">GPIO 9 (SCL)</text>
+  </g>
+  <g fill="#f4c542" stroke="#8a6d00">
+    <rect x="304" y="224" width="16" height="14"/>
+    <rect x="304" y="254" width="16" height="14"/>
+    <rect x="304" y="284" width="16" height="14"/>
+    <rect x="304" y="314" width="16" height="14"/>
+  </g>
+
+  <!-- MAX30102 board -->
+  <rect x="580" y="170" width="240" height="210" rx="10" fill="#5b2a86" stroke="#32124f" stroke-width="2"/>
+  <text x="700" y="198" text-anchor="middle" fill="#ffffff" font-weight="bold">MAX30102 breakout</text>
+  <rect x="700" y="245" width="70" height="60" rx="4" fill="#111827" stroke="#9ca3af"/>
+  <circle cx="722" cy="275" r="7" fill="#ef4444"/>
+  <circle cx="748" cy="275" r="7" fill="#7f1d1d"/>
+  <text x="735" y="325" text-anchor="middle" fill="#e9d5ff" font-size="11">LEDs + photodiode</text>
+  <text x="735" y="340" text-anchor="middle" fill="#e9d5ff" font-size="11">(fingertip here)</text>
+  <g font-size="13" fill="#ffffff">
+    <text x="606" y="235">VIN</text>
+    <text x="606" y="265">GND</text>
+    <text x="606" y="295">SDA</text>
+    <text x="606" y="325">SCL</text>
+    <text x="606" y="355" fill="#c4b5fd">INT — not connected</text>
+  </g>
+  <g fill="#f4c542" stroke="#8a6d00">
+    <rect x="580" y="224" width="16" height="14"/>
+    <rect x="580" y="254" width="16" height="14"/>
+    <rect x="580" y="284" width="16" height="14"/>
+    <rect x="580" y="314" width="16" height="14"/>
+    <rect x="580" y="344" width="16" height="14" fill="#6b7280" stroke="#374151"/>
+  </g>
+
+  <!-- wires -->
+  <g fill="none" stroke-width="4" stroke-linecap="round">
+    <path d="M320 231 H580" stroke="#dc2626"/>
+    <path d="M320 261 H580" stroke="#111827"/>
+    <path d="M320 291 H580" stroke="#2563eb"/>
+    <path d="M320 321 H580" stroke="#f59e0b"/>
+  </g>
+  <g font-size="12" fill="#374151" text-anchor="middle">
+    <text x="450" y="224">3.3 V power (red)</text>
+    <text x="450" y="254">ground (black)</text>
+    <text x="450" y="284">I2C data (blue)</text>
+    <text x="450" y="314">I2C clock (yellow)</text>
+  </g>
+
+  <text x="30" y="412" fill="#555" font-size="12">Power the sensor from 3V3, not 5V. GPIO numbers are set at the top of ppg_streamer.ino and can be changed.</text>
+</svg>

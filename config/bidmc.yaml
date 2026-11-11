@@ -1,0 +1,7 @@
+# Settings for the optional BIDMC public-dataset check (scripts/prepare_bidmc.py).
+# Only the sensor block differs from settings.yaml: the dataset's PPG is a
+# clinical pulse-oximeter waveform, already oriented systole-up and unitless.
+
+sensor:
+  name: BIDMC pulse oximeter
+  invert: false
