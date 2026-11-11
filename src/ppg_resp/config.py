@@ -14,7 +14,7 @@ import yaml
 
 from .errors import ConfigError
 
-FEATURES = ("am", "bw", "fm")
+FEATURES = ("am", "am_detrended", "bw", "fm")
 METHODS = ("fft", "welch", "autocorr", "peak_count")
 INTERPOLATIONS = ("linear", "pchip")
 
