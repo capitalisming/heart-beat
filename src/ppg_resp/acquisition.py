@@ -34,6 +34,7 @@ TIME_COLUMNS_MS = ("timestamp_ms", "time_ms", "millis", "ms")
 VALUE_COLUMNS = ("ppg", "pleth", "ir", "value", "raw", "red")
 SERIAL_HEADER = "sample_index,device_us,ir,red,marker"
 _MICROS_WRAP = 2**32
+START_TIMEOUT_S = 15.0  # give up if the board sends no valid sample for this long
 
 
 @dataclass
@@ -323,8 +324,16 @@ def record_serial(
         out.write(SERIAL_HEADER + "\n")
         link.reset_input_buffer()
         link.readline()  # discard the (probably partial) first line
-        started = time.monotonic()
-        while time.monotonic() - started < duration_s:
+        # Opening the port may reset the board, and boot messages come first.
+        # The recording clock therefore starts at the first valid sample.
+        opened = time.monotonic()
+        started: Optional[float] = None
+        while True:
+            now = time.monotonic()
+            if started is None and now - opened > START_TIMEOUT_S:
+                break
+            if started is not None and now - started >= duration_s:
+                break
             line = link.readline().decode("ascii", errors="replace").strip()
             if not line:
                 continue
@@ -334,12 +343,15 @@ def record_serial(
             if parse_serial_line(line) is None:
                 n_rejected += 1
                 continue
+            if started is None:
+                started = time.monotonic()
             out.write(line + "\n")
             n_samples += 1
             if progress is not None and n_samples % 100 == 0:
                 progress(n_samples, time.monotonic() - started)
 
     if n_samples == 0:
+        out_path.unlink(missing_ok=True)  # leave no empty recording behind
         raise RuntimeError(
             f"no valid samples received on {port}; device said: {device_notes[-3:] or 'nothing'}"
         )

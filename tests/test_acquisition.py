@@ -129,3 +129,63 @@ def test_recording_from_arrays_validation():
         recording_from_arrays(np.zeros(10), fs_hz=0.0)
     rec = recording_from_arrays(np.zeros(10), fs_hz=10.0)
     assert rec.duration_s == pytest.approx(0.9)
+
+
+class _FakeLink:
+    """Stand-in for serial.Serial: boot noise first, then firmware lines."""
+
+    def __init__(self, lines):
+        self._lines = list(lines)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def reset_input_buffer(self):
+        pass
+
+    def readline(self):
+        return (self._lines.pop(0) + "\n").encode() if self._lines else b""
+
+
+def _patch_serial(monkeypatch, lines):
+    import sys
+    import types
+
+    fake = types.ModuleType("serial")
+    fake.SerialException = OSError
+    fake.Serial = lambda port, baud, timeout: _FakeLink(lines)
+    monkeypatch.setitem(sys.modules, "serial", fake)
+
+
+def test_record_serial_skips_boot_noise_and_keeps_only_valid_lines(tmp_path, monkeypatch):
+    from ppg_resp import acquisition
+
+    lines = ["partial,li", "ESP-ROM:esp32s3-20210327", "# ppg_streamer-micropython 1.0",
+             "sample_index,device_us,ir,red,marker"]
+    lines += [f"{i},{i * 10000},{118000 + i},{95000},{1 if i == 3 else 0}" for i in range(50)]
+    lines.insert(20, "12,garbage")
+    _patch_serial(monkeypatch, lines)
+    clock = iter(x * 0.01 for x in range(10_000))
+    monkeypatch.setattr(acquisition.time, "monotonic", lambda: next(clock))
+
+    out = acquisition.record_serial("FAKE", tmp_path / "rec.csv", duration_s=0.5, meta={"participant_id": "P01"})
+    rec = load_recording(out, fs_hz=100.0)
+    assert 20 <= rec.raw.size <= 50
+    assert rec.raw[0] == 118000 and rec.markers_s.size == 1
+    meta = json.loads(out.with_suffix(".meta.json").read_text())
+    assert meta["participant_id"] == "P01" and meta["n_rejected_lines"] >= 2
+    assert any("ppg_streamer" in note for note in meta["device_notes"])
+
+
+def test_record_serial_without_data_fails_and_leaves_no_file(tmp_path, monkeypatch):
+    from ppg_resp import acquisition
+
+    _patch_serial(monkeypatch, ["# ERROR MAX30102 not found on I2C"] * 5)
+    clock = iter(float(x) for x in range(10_000))
+    monkeypatch.setattr(acquisition.time, "monotonic", lambda: next(clock))
+    with pytest.raises(RuntimeError, match="MAX30102 not found"):
+        acquisition.record_serial("FAKE", tmp_path / "rec.csv", duration_s=5)
+    assert not (tmp_path / "rec.csv").exists()

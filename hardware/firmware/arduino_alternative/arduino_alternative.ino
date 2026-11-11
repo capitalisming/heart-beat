@@ -1,5 +1,5 @@
 /*
- * ppg_streamer - raw PPG acquisition for the PPG Respiratory Estimator
+ * arduino_alternative - raw PPG acquisition (Arduino variant; MicroPython is primary) for the PPG Respiratory Estimator
  *
  * Hardware : ESP32-S3-WROOM-1 development board + MAX30102 breakout (I2C)
  * Library  : "SparkFun MAX3010x Pulse and Proximity Sensor Library"
