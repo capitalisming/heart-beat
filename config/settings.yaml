@@ -53,5 +53,8 @@ quality:
   min_regularity: 0.7
   min_cycles: 3.0             # window must hold this many cycles of band low edge
   min_band_width_hz: 0.05
-  sqi_threshold: 50.0         # heuristic, to be calibrated on real recordings
+  # Chosen on SYNTHETIC signals only: at 70 about 3 % of windows with no
+  # respiratory modulation at all are (wrongly) accepted, versus 21 % at 50.
+  # Must be re-calibrated on real recordings before any conclusion is drawn.
+  sqi_threshold: 70.0
   agreement_tol_bpm: 3.0

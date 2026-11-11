@@ -78,7 +78,7 @@ class QualityConfig:
     min_regularity: float = 0.7
     min_cycles: float = 3.0
     min_band_width_hz: float = 0.05
-    sqi_threshold: float = 50.0
+    sqi_threshold: float = 70.0
     agreement_tol_bpm: float = 3.0
 
 
