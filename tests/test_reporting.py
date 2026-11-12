@@ -44,7 +44,7 @@ def test_study_from_manifest_with_every_reference_type(tmp_path):
     for name in ("report.md", "tables/window_pairs.csv", "tables/recordings.csv", "tables/metrics.json",
                  "tables/processing_log.csv", "figures/10_bland_altman.png"):
         assert (tmp_path / "out" / name).is_file()
-    text = (tmp_path / "out" / "report.md").read_text()
+    text = (tmp_path / "out" / "report.md").read_text(encoding="utf-8")
     assert text.startswith("# Test study\n\n> test")
 
 

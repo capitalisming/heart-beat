@@ -79,7 +79,7 @@ For each condition:
 
 1. Start the metronome if the condition is paced; let the participant settle
    for 20 s.
-2. Start the recording:
+2. Start the recording (on Windows write `ppg scripts\record_serial.py ...` and a port like `COM5`):
    ```bash
    python scripts/record_serial.py --port <port> --duration 180 --participant P01 --session S1 --condition paced_15 --analyze
    ```

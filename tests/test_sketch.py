@@ -10,7 +10,7 @@ from pathlib import Path
 from ppg_resp.acquisition import SERIAL_HEADER, parse_serial_line
 
 SKETCH = (Path(__file__).resolve().parents[1] / "hardware" / "firmware" / "arduino_monitor"
-          / "arduino_monitor.ino").read_text()
+          / "arduino_monitor.ino").read_text(encoding="utf-8")
 
 
 def test_csv_header_matches_the_host_parser():

@@ -125,6 +125,58 @@ The software also runs without any hardware on recorded files.
 
 ## 9. Installation
 
+### Windows 10 / 11 (installer)
+
+1. Install **Python 3.12 or 3.13** from <https://www.python.org/downloads/windows/>.
+   On the first screen of the installer tick **Add python.exe to PATH**.
+2. Get the project, either way:
+   - with Git: `git clone https://github.com/capitalisming/heart-beat.git`
+   - or on the GitHub page press **Code → Download ZIP** and extract it
+     (do not run anything from inside the ZIP).
+3. Open the project folder and **double-click `install_windows.bat`**.
+
+The installer creates a virtual environment in `.venv`, installs the packages,
+runs the test suite, runs a demo on a *simulated* recording and lists the
+serial ports. Expected end of the test run: `173 passed`; on Windows the C++
+detector tests are skipped because no C++ compiler is installed, so a smaller
+number of passed tests with a few `skipped` is normal. You can run the
+installer again at any time; it reuses the existing environment.
+
+The installer was written for Windows but has not been run on a Windows
+machine by the authors. If it stops, it prints the reason; the manual steps
+below do the same thing.
+
+**Manual installation (PowerShell or cmd)** in the project folder:
+
+```powershell
+py -3 -m venv .venv
+```
+
+```powershell
+.\.venv\Scripts\python -m pip install -e ".[dev]"
+```
+
+```powershell
+.\.venv\Scripts\python -m pytest
+```
+
+You do not need to "activate" the environment: `ppg.bat` runs the project's
+Python for you. `ppg scripts\run_estimation.py ...` in cmd is the same as
+`.\.venv\Scripts\python scripts\run_estimation.py ...`; in PowerShell write
+`.\ppg` instead of `ppg`. (If you prefer activation in PowerShell:
+`.\.venv\Scripts\Activate.ps1`; if Windows refuses to run scripts, run
+`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.)
+
+**The board.** Install the [Arduino IDE](https://www.arduino.cc/en/software)
+2.x and follow [docs/arduino_guide_ru.md](docs/arduino_guide_ru.md) (Russian).
+Windows normally recognises the ESP32-S3's USB as a COM port without extra
+drivers. Boards with a separate USB-serial chip (CH340, CP210x) need the
+chip's driver from the board seller. The port appears in the Arduino IDE under
+**Tools → Port**, in Windows under **Device Manager → Ports (COM & LPT)**, and
+in the installer output or `ppg scripts\record_serial.py --list`.
+
+### macOS / Linux
+
 ```bash
 git clone https://github.com/capitalisming/heart-beat.git
 cd heart-beat
@@ -138,14 +190,18 @@ Expected last line: `173 passed` (the C++ detector tests are skipped if no C++ c
 
 ## 10. Usage
 
+The commands below are written for Windows (`ppg`, backslashes, `COM5`). On
+macOS/Linux activate the environment and use `python scripts/...` with a port
+such as `/dev/cu.usbmodem1101` or `/dev/ttyACM0`.
+
 **Try it without hardware** on a simulated recording:
 
 ```bash
-python scripts/run_estimation.py data/sample/SYNTHETIC_rr12.csv --reference markers
+ppg scripts\run_estimation.py data\sample\SYNTHETIC_rr12.csv --reference markers
 ```
 
 ```
-Recording : data/sample/SYNTHETIC_rr12.csv  (90.0 s, fs = 100.00 Hz)
+Recording : data\sample\SYNTHETIC_rr12.csv  (90.0 s, fs = 100.00 Hz)
 Pulses    : 102 detected, heart rate 68.2 bpm
 Windows   : 8 of 8 accepted
 RESPIRATORY RATE (median of accepted windows): 12.0 breaths/min [range 12.0-12.0]
@@ -154,28 +210,29 @@ Reference (button marker): 12.0 breaths/min
 ```
 
 Figures of every processing stage, `windows.csv` and `summary.json` are
-written to `results/runs/<name>/`.
+written to `results\runs\<name>\`.
 
-**Record from the device and analyse:**
+**Record from the device and analyse.** Close the Arduino IDE's Serial Monitor
+first: only one program can use the port.
 
 ```bash
-python scripts/record_serial.py --list
+ppg scripts\record_serial.py --list
 ```
 
 ```bash
-python scripts/record_serial.py --port <port> --duration 180 --participant P01 --session S1 --condition rest --analyze
+ppg scripts\record_serial.py --port COM5 --duration 180 --participant P01 --session S1 --condition rest --analyze
 ```
 
 **Evaluate a whole study against ground truth:**
 
 ```bash
-python scripts/run_evaluation.py data/manifest.csv --outdir results/study --recording-figures
+ppg scripts\run_evaluation.py data\manifest.csv --outdir results\study --recording-figures
 ```
 
 **Re-run the synthetic verification:**
 
 ```bash
-python scripts/synthetic_verification.py
+ppg scripts\synthetic_verification.py
 ```
 
 Useful options: `--feature am|am_detrended|bw|fm` to analyse another

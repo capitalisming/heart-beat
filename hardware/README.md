@@ -174,6 +174,7 @@ base.
 5. Set `SERIAL_MODE 0`, upload, press BOOT: one line should show `marker` = 1.
 6. Close the Serial Monitor, then run
    `python scripts/record_serial.py --port <port> --duration 60 --analyze`
+   (on Windows: `ppg scripts\record_serial.py --port COM5 --duration 60 --analyze`)
    and confirm that the reported sampling rate is close to 100 Hz and that the
    heart rate matches a manual pulse count.
 7. Photograph the assembled device and add the pictures to `photos/`.

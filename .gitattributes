@@ -1,0 +1,2 @@
+# Keep Windows batch files with CRLF line endings, whatever the git settings.
+*.bat text eol=crlf

@@ -175,7 +175,7 @@ def test_record_serial_skips_boot_noise_and_keeps_only_valid_lines(tmp_path, mon
     rec = load_recording(out, fs_hz=100.0)
     assert 20 <= rec.raw.size <= 50
     assert rec.raw[0] == 118000 and rec.markers_s.size == 1
-    meta = json.loads(out.with_suffix(".meta.json").read_text())
+    meta = json.loads(out.with_suffix(".meta.json").read_text(encoding="utf-8"))
     assert meta["participant_id"] == "P01" and meta["n_rejected_lines"] >= 2
     assert any("arduino_monitor" in note for note in meta["device_notes"])
 

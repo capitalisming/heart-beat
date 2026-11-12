@@ -136,29 +136,44 @@ sample_index,device_us,ir,red,marker
 Пульс на экране считает упрощённый детектор (`BeatDetector.h`), он нужен только
 для показа. Научный анализ работает по сырым данным.
 
-## Шаг 6. Программа анализа на компьютере
+## Шаг 6. Программа анализа на компьютере (Windows)
 
-В терминале (не в Arduino IDE), в папке репозитория:
+1. Установите **Python 3.12 или 3.13**: <https://www.python.org/downloads/windows/>.
+   На первом экране установщика обязательно поставьте галочку
+   **Add python.exe to PATH**.
+2. Скачайте проект: на странице GitHub нажмите **Code → Download ZIP** и
+   распакуйте архив (или `git clone https://github.com/capitalisming/heart-beat.git`).
+3. Откройте папку проекта и **дважды щёлкните `install_windows.bat`**.
 
-```bash
-python3 -m venv .venv
+Установщик создаёт окружение `.venv`, ставит пакеты (нужен интернет), запускает
+тесты, показывает пробный запуск на тестовом сигнале и список портов.
+В конце тестов будет `passed` и несколько `skipped`: тесты C++-детектора
+пропускаются, потому что на Windows нет компилятора, это нормально. Установщик
+можно запускать повторно.
+
+Установщик написан для Windows, но авторами на Windows не запускался. Если он
+остановился, он пишет причину. Те же действия вручную (PowerShell или cmd, в
+папке проекта):
+
+```powershell
+py -3 -m venv .venv
 ```
 
-```bash
-source .venv/bin/activate
+```powershell
+.\.venv\Scripts\python -m pip install -e ".[dev]"
 ```
 
-```bash
-pip install -e ".[dev]"
-```
+Дальше все команды запускаются через `ppg.bat`, активировать окружение не
+нужно: в cmd пишите `ppg scripts\...`, в PowerShell `.\ppg scripts\...`.
 
-На Windows вместо второй команды: `.venv\Scripts\activate`.
-
-Проверка без платы, на тестовом сигнале (должно выйти 12.0 breaths/min):
+Проверка без платы (должно выйти 12.0 breaths/min):
 
 ```bash
-python scripts/run_estimation.py data/sample/SYNTHETIC_rr12.csv --reference markers
+ppg scripts\run_estimation.py data\sample\SYNTHETIC_rr12.csv --reference markers
 ```
+
+macOS и Linux: `python3 -m venv .venv`, `source .venv/bin/activate`,
+`pip install -e ".[dev]"`, затем `python scripts/...` вместо `ppg scripts\...`.
 
 ## Шаг 7. Запись измерения
 
@@ -166,20 +181,25 @@ python scripts/run_estimation.py data/sample/SYNTHETIC_rr12.csv --reference mark
 
 1. **Закройте Serial Monitor и Serial Plotter** в Arduino IDE.
 2. Убедитесь, что `SERIAL_MODE` равен 0 (шаг 5).
-3. Найдите порт:
+3. Найдите порт одним из способов:
+   - в Arduino IDE: **Tools → Port** (например `COM5`);
+   - в Windows: **Диспетчер устройств → Порты (COM и LPT)**;
+   - командой:
 
    ```bash
-   python scripts/record_serial.py --list
+   ppg scripts\record_serial.py --list
    ```
 
-   На macOS он выглядит как `/dev/cu.usbmodem…` или `/dev/cu.usbserial…`, на
-   Windows это `COM5` и т. п.
+   Плата с ESP32-S3 обычно определяется как COM-порт без драйверов. Если у платы
+   отдельный USB-чип (CH340, CP210x) и порта нет, нужен драйвер этого чипа от
+   продавца платы. На macOS порт выглядит как `/dev/cu.usbmodem…`, на Linux как
+   `/dev/ttyACM0`.
 4. Сядьте спокойно, положите палец на датчик. Помощник смотрит на вашу грудную
    клетку и нажимает **BOOT** в начале каждого вдоха.
 5. Запустите запись на 3 минуты (подставьте свой порт):
 
    ```bash
-   python scripts/record_serial.py --port /dev/cu.usbmodem1101 --duration 180 --participant P01 --session S1 --condition rest --analyze
+   ppg scripts\record_serial.py --port COM5 --duration 180 --participant P01 --session S1 --condition rest --analyze
    ```
 
    Открытие порта может перезагрузить плату; запись начнётся с первого
@@ -188,14 +208,14 @@ python scripts/run_estimation.py data/sample/SYNTHETIC_rr12.csv --reference mark
 После записи программа сразу покажет результат (числа в примере условные):
 
 ```
-Recording : data/raw/P01_S1_rest.csv  (180.0 s, fs = 99.31 Hz)
+Recording : data\raw\P01_S1_rest.csv  (180.0 s, fs = 99.31 Hz)
 Pulses    : 214 detected, heart rate 71.4 bpm
 Windows   : 17 of 19 accepted
 RESPIRATORY RATE (median of accepted windows): 14.2 breaths/min [range 13.6-15.1]
 Reference (button marker): 14.5 breaths/min
 ```
 
-Графики всех этапов сохраняются в `results/runs/P01_S1_rest/figures/`.
+Графики всех этапов сохраняются в `results\runs\P01_S1_rest\figures\`.
 
 Если вместо числа выведено `STATUS: LOW QUALITY` или `INSUFFICIENT DATA`, это
 штатное поведение: сигнал недостаточно хорош, причина указана рядом. Повторите
@@ -208,11 +228,11 @@ Reference (button marker): 14.5 breaths/min
 `data/sample/manifest.csv`) и выполните:
 
 ```bash
-python scripts/run_evaluation.py data/manifest.csv --outdir results/study --recording-figures
+ppg scripts\run_evaluation.py data\manifest.csv --outdir results\study --recording-figures
 ```
 
 Отчёт с MAE, смещением, корреляцией и графиком Бланда–Альтмана появится в
-`results/study/report.md`.
+`results\study\report.md`.
 
 ## Если что-то не работает
 
@@ -229,7 +249,9 @@ python scripts/run_evaluation.py data/manifest.csv --outdir results/study --reco
 | Вместо пульса `WEAK` | Слабый сигнал: прижмите палец аккуратнее, увеличьте `LED_CURRENT`; пульсовая волна меньше 15 отсчётов не считается пульсом |
 | Сигнал есть в `red`, а в `ir` слабый | На части модулей каналы перепутаны: добавьте к командам `--channel red` |
 | `# WARN fifo_overflow` часто | Плата не успевает забирать данные: увеличьте `DRAW_INTERVAL_MS` (реже обновлять экран) |
-| `cannot open serial port` при записи | Порт занят: закройте Serial Monitor и Serial Plotter |
+| `cannot open serial port` при записи | Порт занят: закройте Serial Monitor и Serial Plotter. Проверьте номер `COM` в Диспетчере устройств |
+| `install_windows.bat`: «Python was not found» | Python не установлен или без галочки **Add python.exe to PATH**: переустановите и отметьте её |
+| В PowerShell `ppg` не находится | Пишите `.\ppg` (с точкой и обратной косой чертой) или запускайте из cmd |
 | `no valid samples received` | Нажмите RESET на плате и повторите; проверьте, что `SERIAL_MODE` равен 0 |
 | Пульс на экране заметно отличается от настоящего | Это упрощённый детектор для показа: двигайте пальцем меньше, подождите 10 секунд; научные результаты считаются по сырым данным |
 
