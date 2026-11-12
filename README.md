@@ -409,13 +409,9 @@ Complete list: [docs/limitations.md](docs/limitations.md).
 7. Compare AM with BW and FM on the same recordings, and only then consider
    fusing them [1].
 
-## 19. Contributors
 
-- Project author: *add your name before submission.*
-- Code and documentation were written with the assistance of Claude
-  (Anthropic), as recorded in the commit history.
 
-## 20. References
+## 19. References
 
 1. Karlen W, Raman S, Ansermino JM, Dumont GA. Multiparameter respiratory rate estimation from the photoplethysmogram. *IEEE Trans Biomed Eng.* 2013;60(7):1946–1953. doi:10.1109/TBME.2013.2246160
 2. Charlton PH, Bonnici T, Tarassenko L, Clifton DA, Beale R, Watkinson PJ. An assessment of algorithms to estimate respiratory rate from the electrocardiogram and photoplethysmogram. *Physiol Meas.* 2016;37(4):610–626. doi:10.1088/0967-3334/37/4/610
