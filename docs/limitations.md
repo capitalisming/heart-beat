@@ -5,10 +5,11 @@
 1. **No human data has been collected with this device.** Every numerical
    result in the repository comes from simulated signals. The research
    question is unanswered.
-2. **The hardware is unbuilt and the firmware has not run on a board.** The
-   sensor driver is tested against a simulated MAX30102 (register values,
-   FIFO decoding, overflow counting); wiring, timing and the real I2C bus are
-   not covered by that.
+2. **The device is assembled but not yet characterised.** The project owner
+   ran the sketch on the board and saw live samples at about 100 per second,
+   but no measured sampling-rate accuracy, signal quality across people, or
+   OLED behaviour is documented here. The beat detector shown on the display is
+   tested only on simulated signals and its heart rate is an approximation.
 3. **Synthetic tests are optimistic by construction.** The simulator has a
    perfectly steady breathing rate, a fixed pulse shape and white noise. Real
    breathing wanders, pulse shape changes with posture and temperature, and

@@ -6,9 +6,9 @@
 
 | | |
 |-|-|
-| **Software** | Complete, 197 automated tests passing |
+| **Software** | Complete, 173 automated tests passing |
 | **Verification on simulated signals** | Done ([report](results/synthetic_verification/report.md)) |
-| **Hardware (ESP32-S3 + MAX30102)** | Designed; MicroPython firmware written and tested against a simulated sensor, not yet run on a board |
+| **Hardware (ESP32-S3 + MAX30102)** | Assembled by the project owner; the Arduino sketch streamed live data in the Arduino IDE (screenshot seen in the session, not stored here); no photographs or ground-truth recordings in the repository yet |
 | **Experiment on people** | Not yet performed, so **the research question is still open** |
 
 ## 1. Project Title
@@ -101,15 +101,15 @@ Module table, interfaces and the detailed pipeline diagram:
 
 ![Wiring diagram](hardware/wiring_diagram/wiring.svg)
 
-The board runs MicroPython firmware installed with Thonny
-([hardware/firmware/micropython/](hardware/firmware/micropython/)); an Arduino
-sketch producing the same stream is kept as an alternative. Firmware
-description, data-stream format and bring-up checklist:
-[hardware/README.md](hardware/README.md). Step-by-step Thonny guide (Russian):
-[docs/thonny_guide_ru.md](docs/thonny_guide_ru.md); the same with the
-Arduino IDE (OLED heart monitor, serial formats):
-[docs/arduino_guide_ru.md](docs/arduino_guide_ru.md). No photographs exist yet because
-the device has not been assembled; none are faked. No 3D-printed parts are
+The board runs an Arduino sketch
+([hardware/firmware/arduino_monitor/](hardware/firmware/arduino_monitor/)) that
+streams the raw data to the computer and shows a live heart monitor (heart
+rate and pulse waveform) on the optional OLED. Firmware description,
+data-stream format and bring-up checklist:
+[hardware/README.md](hardware/README.md). Step-by-step guide in Russian, from
+wiring to a recorded measurement:
+[docs/arduino_guide_ru.md](docs/arduino_guide_ru.md). No photographs of the
+device are in the repository yet and none are faked. No 3D-printed parts are
 used (explained in the hardware README).
 
 The software also runs without any hardware on recorded files.
@@ -118,8 +118,10 @@ The software also runs without any hardware on recorded files.
 
 - Python ≥ 3.9 (developed on 3.14)
 - numpy, scipy, pandas, matplotlib, pyyaml, pyserial; pytest for the tests
-- For the board: [Thonny](https://thonny.org) and MicroPython for ESP32-S3
-  (installed from within Thonny); the firmware needs no extra libraries
+- For the board: [Arduino IDE](https://www.arduino.cc/en/software) 2.x with the
+  *esp32 by Espressif Systems* board package and the libraries *SparkFun
+  MAX3010x Pulse and Proximity Sensor Library*, *Adafruit SSD1306* and
+  *Adafruit GFX Library*
 
 ## 9. Installation
 
@@ -132,7 +134,7 @@ pip install -e ".[dev]"
 python -m pytest
 ```
 
-Expected last line: `197 passed` (the C++ detector tests are skipped if no C++ compiler is installed).
+Expected last line: `173 passed` (the C++ detector tests are skipped if no C++ compiler is installed).
 
 ## 10. Usage
 
@@ -286,8 +288,8 @@ intervals are only given with at least 6 participants. Details:
 
 ### Real recordings
 
-**None yet.** The device has not been built and no participant has been
-measured, so there is no answer to the research question in this repository.
+**None yet.** No recording with an independent breath reference has been
+analysed, so there is no answer to the research question in this repository.
 When recordings exist, `scripts/run_evaluation.py` produces the report,
 tables and figures for this section.
 
@@ -311,7 +313,7 @@ rate and white noise. Real signals are harder. Full report:
 
 ## 16. Limitations
 
-- No human data and no built hardware yet.
+- No recordings with ground truth yet.
 - Amplitude modulation is weak or absent in some people and conditions.
 - Peak-to-peak amplitude also picks up baseline wander.
 - Breathing above half the heart rate is aliased and undetectable as such.
@@ -329,9 +331,9 @@ Complete list: [docs/limitations.md](docs/limitations.md).
 - Raw recordings are never modified; every result is recomputed from them.
 - Simulations use fixed random seeds; `scripts/synthetic_verification.py`
   regenerates `results/synthetic_verification/` and `data/sample/`.
-- `python -m pytest` runs 197 tests covering each module, the sensor driver
-  against a simulated MAX30102, the display screen against a fake OLED, the
-  on-device beat detector in Python and C++, the listed edge
+- `python -m pytest` runs 173 tests covering each module, the on-device beat
+  detector (compiled from the sketch's own header), the serial stream format
+  against the sketch, the listed edge
   cases (empty files, gaps, irregular timestamps, wrong sampling rate,
   artifacts, no pulse, no modulation) and the statistics.
 - The experiment is specified in advance in
@@ -339,7 +341,7 @@ Complete list: [docs/limitations.md](docs/limitations.md).
 
 ## 18. Future Improvements
 
-1. Build the device, complete the bring-up checklist, add photographs.
+1. Complete the bring-up checklist on the built device and add photographs.
 2. Run the experiment and fill in the Results section.
 3. Calibrate the SQI threshold on real data, with separate tuning and test
    participants.
@@ -372,7 +374,9 @@ Complete list: [docs/limitations.md](docs/limitations.md).
 12. Welch PD. The use of fast Fourier transform for the estimation of power spectra: a method based on time averaging over short, modified periodograms. *IEEE Trans Audio Electroacoust.* 1967;15(2):70–73. doi:10.1109/TAU.1967.1161901
 
 Sensor and tools: Maxim Integrated, *MAX30102 High-Sensitivity Pulse
-Oximeter and Heart-Rate Sensor for Wearable Health* (datasheet); MicroPython,
-<https://micropython.org>; Thonny, <https://thonny.org>; SparkFun MAX3010x
-Sensor Library (Arduino alternative), <https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library>.
+Oximeter and Heart-Rate Sensor for Wearable Health* (datasheet); Arduino IDE,
+<https://www.arduino.cc/en/software>; SparkFun MAX3010x Sensor Library,
+<https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library>; Adafruit SSD1306,
+<https://github.com/adafruit/Adafruit_SSD1306>; Adafruit GFX,
+<https://github.com/adafruit/Adafruit-GFX-Library>.
 Optional dataset: BIDMC PPG and Respiration Dataset, <https://physionet.org/content/bidmc/> [6].

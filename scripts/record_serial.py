@@ -68,7 +68,7 @@ def main(argv=None) -> int:
         "condition": args.condition,
         "notes": args.notes,
         "sensor": "MAX30102",
-        "controller": "ESP32-S3-WROOM-1",
+        "controller": "ESP32-S3",
         "declared_fs_hz": 100.0,
     }
 

@@ -66,6 +66,6 @@
     <text x="450" y="314">I2C clock (yellow)</text>
   </g>
 
-  <text x="30" y="396" fill="#555" font-size="12">Power the sensor from 3V3, not 5V. GPIO numbers are set at the top of main.py and can be changed.</text>
+  <text x="30" y="396" fill="#555" font-size="12">Power the sensor from 3V3, not 5V. GPIO numbers are set at the top of arduino_monitor.ino and can be changed.</text>
   <text x="30" y="416" fill="#1d3557" font-size="12" font-weight="bold">Optional 0.96" OLED (SSD1306, I2C): VCC→3V3, GND→GND, SDA→GPIO 8, SCL→GPIO 9, i.e. in parallel with the MAX30102 pins.</text>
 </svg>

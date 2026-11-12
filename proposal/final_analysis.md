@@ -14,16 +14,15 @@ expectations.
 | Respiratory signal and rate estimation | Achieved (software) | Four estimators; simulated rates 7–28 /min recovered within 0.5 /min in tests |
 | Signal-quality rejection | Achieved (software) | Statuses with reasons; flat, noise-only, too-short, low-rate and gapped inputs handled without a false number in tests |
 | Agreement statistics | Achieved (software) | MAE, RMSE, bias, SD, Pearson, Spearman, Bland–Altman incl. repeated measures; checked against hand calculations |
-| Acquisition firmware | Written, unverified on hardware | MicroPython driver and streamer; driver tested against a simulated MAX30102 |
-| Reproducible repository | Achieved | 166 passing tests, central configuration, documented protocol |
+| Acquisition device and firmware | Partly achieved | Assembled by the owner; an Arduino sketch streamed live raw data in the Arduino IDE (a screenshot seen in the session showed continuous sample indices at about 100 Hz). The current sketch adds an OLED heart monitor; its beat detector is tested on simulated signals in C++; not characterised on people |
+| Reproducible repository | Achieved | 173 passing tests, central configuration, documented protocol |
 
 ## 2. Which objectives were not achieved?
 
 | Objective | Status | What is missing |
 |-----------|--------|-----------------|
-| Working acquisition device | **Not achieved** | Parts are available; the device has not been assembled, and the firmware has not been run on the board |
 | Recordings with ground truth | **Not achieved** | No participant has been measured |
-| Quantitative answer to the research question | **Not achieved** | Depends on the two rows above |
+| Quantitative answer to the research question | **Not achieved** | Depends on the recordings above and on confirming a clear pulse signal on real fingers |
 | Photographs and demonstration video | **Not achieved** | Require the built device |
 
 ## 3. Technical difficulties
@@ -51,9 +50,15 @@ expectations.
 5. **Dependence between windows.** Overlapping windows would inflate the
    apparent sample size, so the evaluation uses one pair per recording,
    clusters by participant, and withholds intervals for small samples.
-6. **No board available during development.** The firmware could only be
-   tested against a software model of the sensor's registers and FIFO, which
-   cannot reveal wiring, timing or bus problems.
+6. **No board during development of the software.** The sketch could not be
+   compiled or run in the development environment. It was checked against the
+   public headers of its libraries, and the beat detector was compiled and
+   tested on a PC; wiring, timing and the display were checked only by the
+   owner running the project on the real board.
+7. **No pulse in the first live data.** The owner's first screenshot showed the
+   infrared channel moving by about 10 counts out of 52 000 over 13 samples,
+   consistent with no finger or poor contact, not with a clear pulse wave.
+   Whether a good wave is obtained is the first thing to confirm.
 
 ## 4. Results obtained
 
@@ -99,7 +104,7 @@ calibrated on simulations; a button reference with human timing error.
 
 ## 7. What would be improved with more time and resources
 
-1. Assemble the device, verify the firmware, and run the protocol with at
+1. Verify the pulse signal on real fingers, then run the protocol with at
    least 6 participants: this is the missing core of the project.
 2. Test the algorithm on the public BIDMC dataset to see its behaviour on
    real PPG with an independent reference before the own experiment.

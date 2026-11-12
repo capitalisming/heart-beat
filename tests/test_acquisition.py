@@ -163,7 +163,7 @@ def _patch_serial(monkeypatch, lines):
 def test_record_serial_skips_boot_noise_and_keeps_only_valid_lines(tmp_path, monkeypatch):
     from ppg_resp import acquisition
 
-    lines = ["partial,li", "ESP-ROM:esp32s3-20210327", "# ppg_streamer-micropython 1.0",
+    lines = ["partial,li", "ESP-ROM:esp32s3-20210327", "# arduino_monitor 1.0",
              "sample_index,device_us,ir,red,marker"]
     lines += [f"{i},{i * 10000},{118000 + i},{95000},{1 if i == 3 else 0}" for i in range(50)]
     lines.insert(20, "12,garbage")
@@ -177,7 +177,7 @@ def test_record_serial_skips_boot_noise_and_keeps_only_valid_lines(tmp_path, mon
     assert rec.raw[0] == 118000 and rec.markers_s.size == 1
     meta = json.loads(out.with_suffix(".meta.json").read_text())
     assert meta["participant_id"] == "P01" and meta["n_rejected_lines"] >= 2
-    assert any("ppg_streamer" in note for note in meta["device_notes"])
+    assert any("arduino_monitor" in note for note in meta["device_notes"])
 
 
 def test_record_serial_without_data_fails_and_leaves_no_file(tmp_path, monkeypatch):

@@ -1,8 +1,7 @@
 # Photos
 
-No photographs yet: the device has not been assembled by the repository
-authors. Add real photos here once it is built. Do not add renders, stock
-images or generated pictures.
+No photographs yet. Add real photos of the assembled device here. Do not add
+renders, stock images or generated pictures.
 
 Shots that document the build:
 

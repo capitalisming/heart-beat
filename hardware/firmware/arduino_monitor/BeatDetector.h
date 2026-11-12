@@ -1,9 +1,9 @@
 /*
  * BeatDetector.h - streaming heart-beat detector for the on-device display.
  *
- * C++ twin of hardware/firmware/micropython/beat.py (same constants, same
- * steps; tests/test_beat_detector.py runs both on the same signals).
- * No Arduino dependencies, so it also compiles on a PC.
+ * No Arduino dependencies, so it also compiles on a PC:
+ * tests/test_beat_detector.py builds it with the host compiler and runs it on
+ * simulated signals (tests/beat_harness.cpp).
  *
  * Call update() once per raw sample at about 100 Hz, then read bpm, beat, value.
  * This is a display aid only. The research analysis works on the raw stream.
