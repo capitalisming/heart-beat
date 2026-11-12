@@ -129,10 +129,12 @@ def test_stream_format_matches_the_host_parser():
     main = (DRIVER.parent / "main.py").read_text()
     assert f'"{SERIAL_HEADER}\\n"' in main
     line = "%d,%d,%d,%d,%d\n" % (12, 3456789, 118000, 95000, 1)
-    assert '"%d,%d,%d,%d,%d\\n" % (index, clock_us, sensor.ir(data, k), sensor.red(data, k), marker)' in main
+    assert '"%d,%d,%d,%d,%d\\n" % (index, clock_us, ir, red, marker)' in main
     assert parse_serial_line(line) == (12, 3456789, 118000, 95000, 1)
 
 
-@pytest.mark.parametrize("name", ["main.py", "max30102.py", "check_sensor.py", "plot_pulse.py"])
+@pytest.mark.parametrize(
+    "name", ["main.py", "max30102.py", "check_sensor.py", "plot_pulse.py", "beat.py", "display.py", "ssd1306.py"]
+)
 def test_firmware_files_are_valid_python_syntax(name):
     compile((DRIVER.parent / name).read_text(), name, "exec")

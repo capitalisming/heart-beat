@@ -6,7 +6,7 @@
 
 | | |
 |-|-|
-| **Software** | Complete, 166 automated tests passing |
+| **Software** | Complete, 197 automated tests passing |
 | **Verification on simulated signals** | Done ([report](results/synthetic_verification/report.md)) |
 | **Hardware (ESP32-S3 + MAX30102)** | Designed; MicroPython firmware written and tested against a simulated sensor, not yet run on a board |
 | **Experiment on people** | Not yet performed, so **the research question is still open** |
@@ -89,7 +89,8 @@ Module table, interfaces and the detailed pipeline diagram:
 |------|------|
 | ESP32-S3-WROOM-1 development board | Controller, USB serial |
 | MAX30102 breakout | PPG sensor (I2C) |
-| Breadboard, 4 DuPont wires, USB data cable | Assembly |
+| Breadboard, DuPont wires, USB data cable | Assembly |
+| 0.96" SSD1306 OLED, 128×64, I2C (optional) | Live heart monitor (heart rate + pulse waveform), wired in parallel with the sensor |
 
 | MAX30102 | ESP32-S3 |
 |----------|----------|
@@ -105,7 +106,9 @@ The board runs MicroPython firmware installed with Thonny
 sketch producing the same stream is kept as an alternative. Firmware
 description, data-stream format and bring-up checklist:
 [hardware/README.md](hardware/README.md). Step-by-step Thonny guide (Russian):
-[docs/thonny_guide_ru.md](docs/thonny_guide_ru.md). No photographs exist yet because
+[docs/thonny_guide_ru.md](docs/thonny_guide_ru.md); the same with the
+Arduino IDE (OLED heart monitor, serial formats):
+[docs/arduino_guide_ru.md](docs/arduino_guide_ru.md). No photographs exist yet because
 the device has not been assembled; none are faked. No 3D-printed parts are
 used (explained in the hardware README).
 
@@ -129,7 +132,7 @@ pip install -e ".[dev]"
 python -m pytest
 ```
 
-Expected last line: `166 passed`.
+Expected last line: `197 passed` (the C++ detector tests are skipped if no C++ compiler is installed).
 
 ## 10. Usage
 
@@ -326,8 +329,9 @@ Complete list: [docs/limitations.md](docs/limitations.md).
 - Raw recordings are never modified; every result is recomputed from them.
 - Simulations use fixed random seeds; `scripts/synthetic_verification.py`
   regenerates `results/synthetic_verification/` and `data/sample/`.
-- `python -m pytest` runs 166 tests covering each module, the sensor driver
-  against a simulated MAX30102, the listed edge
+- `python -m pytest` runs 197 tests covering each module, the sensor driver
+  against a simulated MAX30102, the display screen against a fake OLED, the
+  on-device beat detector in Python and C++, the listed edge
   cases (empty files, gaps, irregular timestamps, wrong sampling rate,
   artifacts, no pulse, no modulation) and the statistics.
 - The experiment is specified in advance in
