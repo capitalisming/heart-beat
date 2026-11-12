@@ -2,7 +2,7 @@
 
 How a breathing rate is obtained from a PPG trace, why each step is done the
 way it is, and where the method stops being trustworthy. Numbered references
-are listed in the [README](../README.md#20-references).
+are listed in the [README](../README.md#референсы).
 
 ## 1. Physiological basis
 

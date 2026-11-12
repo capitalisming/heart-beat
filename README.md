@@ -1,435 +1,219 @@
 # PPG Respiratory Estimator
 
-**Extract breathing rate from a pulse sensor, without a breathing sensor.**
+Определяем частоту дыхания по пульсовому датчику, без отдельного датчика дыхания.
+Железо: ESP32-S3 и MAX30102, обработка на Python.
 
-> Research and teaching project. Not a medical device; no clinical validation.
+## О чём проект
 
-| | |
-|-|-|
-| **Software** | Complete, 173 automated tests passing |
-| **Verification on simulated signals** | Done ([report](results/synthetic_verification/report.md)) |
-| **Hardware (ESP32-S3 + MAX30102)** | Assembled by the project owner; the Arduino sketch streamed live data in the Arduino IDE (screenshot seen in the session, not stored here); no photographs or ground-truth recordings in the repository yet |
-| **Experiment on people** | Not yet performed, so **the research question is still open** |
+MAX30102 светит красным и инфракрасным светом в палец и измеряет, сколько света
+вернулось. Это сигнал фотоплетизмограммы (PPG): на нём видна каждая пульсовая
+волна. Дыхание немного меняет этот сигнал, в том числе высоту пульсовых волн.
+Если измерить высоту каждой волны и посмотреть, как она растёт и падает со
+временем, из этого ритма можно получить частоту дыхания.
 
-## 1. Project Title
+Что делает программа:
 
-PPG Respiratory Estimator: Extract Breathing Rate Without Extra Sensors
+1. Плата читает датчик (100 отсчётов в секунду) и отправляет данные на компьютер.
+2. Python фильтрует сигнал и находит пульсовые волны.
+3. Для каждой волны считается размах `A = P - T` (вершина минус впадина перед ней).
+4. Ряд `A` приводится к равномерной сетке и фильтруется в диапазоне дыхания
+   (0.1-0.5 Гц, то есть 6-30 вдохов в минуту).
+5. Частота дыхания берётся по главному пику спектра в окне 32 с.
+6. Результат сравнивается с независимым подсчётом вдохов.
 
-## 2. Project Overview
+Если сигнал плохой, программа не выдаёт число, а пишет причину (`LOW QUALITY`
+или `INSUFFICIENT DATA`).
 
-A photoplethysmogram (PPG) is the optical pulse signal measured by shining
-light into a fingertip. Breathing subtly changes that signal. This project
-measures the height of every pulse wave (peak-to-peak amplitude), tracks how
-that height rises and falls over time, and reads the breathing rate from that
-rhythm. It then compares the result with breaths counted independently, to
-find out how far such an estimate can be trusted.
+На плате есть ещё экран: если подключить OLED 0.96", на нём показывается пульс и
+бегущая кривая, как на больничном мониторе. Этот пульс считается упрощённо и
+только для показа.
 
-The repository contains the acquisition firmware, a Python analysis package,
-a statistical evaluation against ground truth, tests, and the experimental
-protocol.
+## Исследовательский вопрос
 
-## 3. Research Question
+**Насколько хорошо модуляция размаха пульсовых волн (peak-to-peak) совпадает с
+реальным количеством вдохов?**
 
-> **How well does optical peak-to-peak modulation correlate with actual breath counts?**
+Совпадение мы смотрим не только по корреляции, но и по ошибке (MAE, RMSE), смещению
+и графику Бланда-Альтмана: корреляция может быть высокой, а числа всё равно
+неверными.
 
-"Correlate" is taken in the wider sense of *agree*: besides correlation
-coefficients the project reports error (MAE, RMSE), bias and Bland–Altman
-limits of agreement, because two measurements can correlate strongly and
-still disagree.
+Эталон дыхания: помощник нажимает кнопку BOOT на плате в начале каждого вдоха.
+Нажатия пишутся в тот же поток, что и сигнал, поэтому отдельная синхронизация не
+нужна. Подробный протокол измерений: [docs/experiment_protocol.md](docs/experiment_protocol.md).
 
-## 4. Objectives
+**Статус.** Измерений на людях с эталоном пока нет, поэтому ответа на вопрос нет.
+На симулированных сигналах программа находит заданную частоту, но это проверка кода,
+а не точности метода. Версия скетча с OLED-экраном пока не подтверждена на плате
+(детектор пульса проверен только на компьютере). Ограничения:
+[docs/limitations.md](docs/limitations.md).
 
-1. Acquire raw PPG from a MAX30102 with an ESP32-S3 at a known sampling rate.
-2. Detect individual pulse waves and extract `A_i = P_i − T_i` for each.
-3. Turn the amplitude series into a respiratory signal and estimate the
-   breathing rate with four independent methods.
-4. Judge signal quality and withhold estimates that are not supported by the
-   signal.
-5. Compare with an independent breath reference and quantify agreement.
-6. Document limitations and make every step reproducible.
+## Что нужно
 
-## 5. Scientific Background
+- плата с ESP32-S3
+- датчик MAX30102
+- OLED 0.96" SSD1306 128x64, I2C (по желанию)
+- макетная плата, провода, USB-кабель с передачей данных
+- Windows 10 или 11, Python, Arduino IDE
 
-Breathing modulates the PPG in three ways [3, 4]:
+Подключение (OLED подключается параллельно датчику, к тем же GPIO 8 и 9):
 
-- **Amplitude modulation (AM)** – pulse height changes as intrathoracic
-  pressure alters stroke volume. *This is the mechanism under study.*
-- **Baseline wander (BW)** – the baseline shifts with venous return.
-- **Frequency modulation (FM)** – heart rate speeds up on inspiration.
+| MAX30102 | OLED | ESP32-S3 |
+|----------|------|----------|
+| VIN | VCC | 3V3 (не 5V) |
+| GND | GND | GND |
+| SDA | SDA | GPIO 8 |
+| SCL | SCL | GPIO 9 |
 
-Published algorithms extract one or more of these and estimate the rate in
-the time or frequency domain [1, 2, 6, 10, 11]. Their performance varies
-widely between people and conditions, and no single modulation is reliably
-present in everyone [2, 3]. The project isolates AM, implements BW and FM
-only for side-by-side comparison, and never blends them into the primary
-estimate.
+Схема: [hardware/wiring_diagram/wiring.svg](hardware/wiring_diagram/wiring.svg).
+Если у вашей платы I2C на других контактах, измените `PIN_I2C_SDA` и `PIN_I2C_SCL`
+в начале скетча.
 
-Full derivation, signal model and justification of each parameter:
-[docs/methodology.md](docs/methodology.md).
+## Установка на Windows
 
-## 6. System Architecture
+1. Установите Python 3.12 или 3.13 с [python.org](https://www.python.org/downloads/windows/).
+   В установщике отметьте галочку **Add python.exe to PATH**.
+2. Скачайте проект: на странице GitHub **Code, Download ZIP**, и распакуйте.
+   Или `git clone https://github.com/capitalisming/heart-beat.git`.
+3. Дважды щёлкните `install_windows.bat`.
 
-```mermaid
-flowchart LR
-    S[MAX30102] -- I2C --> M[ESP32-S3]
-    M -- USB serial --> R[Raw PPG file]
-    R --> P[Preprocessing] --> D[Pulse detection] --> A["Peak-to-peak<br/>A = P − T"]
-    A --> RS[Respiratory<br/>modulation signal] --> F[Band-pass +<br/>quality check] --> E[Respiratory rate]
-    G[Independent<br/>breath reference] --> C[Comparison]
-    E --> C --> ST[Statistics +<br/>figures]
-```
+Установщик создаёт папку `.venv`, ставит пакеты (нужен интернет), запускает тесты
+и пробный пример на симулированном сигнале. На Windows часть тестов пропускается
+(нужен компилятор C++), это нормально.
 
-One Python package, one module per stage, each with a typed input and output.
-Module table, interfaces and the detailed pipeline diagram:
-[docs/architecture.md](docs/architecture.md).
-
-## 7. Hardware Requirements
-
-| Part | Role |
-|------|------|
-| ESP32-S3-WROOM-1 development board | Controller, USB serial |
-| MAX30102 breakout | PPG sensor (I2C) |
-| Breadboard, DuPont wires, USB data cable | Assembly |
-| 0.96" SSD1306 OLED, 128×64, I2C (optional) | Live heart monitor (heart rate + pulse waveform), wired in parallel with the sensor |
-
-| MAX30102 | ESP32-S3 |
-|----------|----------|
-| VIN | 3V3 |
-| GND | GND |
-| SDA | GPIO 8 |
-| SCL | GPIO 9 |
-
-![Wiring diagram](hardware/wiring_diagram/wiring.svg)
-
-The board runs an Arduino sketch
-([hardware/firmware/arduino_monitor/](hardware/firmware/arduino_monitor/)) that
-streams the raw data to the computer and shows a live heart monitor (heart
-rate and pulse waveform) on the optional OLED. Firmware description,
-data-stream format and bring-up checklist:
-[hardware/README.md](hardware/README.md). Step-by-step guide in Russian, from
-wiring to a recorded measurement:
-[docs/arduino_guide_ru.md](docs/arduino_guide_ru.md). No photographs of the
-device are in the repository yet and none are faked. No 3D-printed parts are
-used (explained in the hardware README).
-
-The software also runs without any hardware on recorded files.
-
-## 8. Software Requirements
-
-- Python ≥ 3.9 (developed on 3.14)
-- numpy, scipy, pandas, matplotlib, pyyaml, pyserial; pytest for the tests
-- For the board: [Arduino IDE](https://www.arduino.cc/en/software) 2.x with the
-  *esp32 by Espressif Systems* board package and the libraries *SparkFun
-  MAX3010x Pulse and Proximity Sensor Library*, *Adafruit SSD1306* and
-  *Adafruit GFX Library*
-
-## 9. Installation
-
-### Windows 10 / 11 (installer)
-
-1. Install **Python 3.12 or 3.13** from <https://www.python.org/downloads/windows/>.
-   On the first screen of the installer tick **Add python.exe to PATH**.
-2. Get the project, either way:
-   - with Git: `git clone https://github.com/capitalisming/heart-beat.git`
-   - or on the GitHub page press **Code → Download ZIP** and extract it
-     (do not run anything from inside the ZIP).
-3. Open the project folder and **double-click `install_windows.bat`**.
-
-The installer creates a virtual environment in `.venv`, installs the packages,
-runs the test suite, runs a demo on a *simulated* recording and lists the
-serial ports. Expected end of the test run: `173 passed`; on Windows the C++
-detector tests are skipped because no C++ compiler is installed, so a smaller
-number of passed tests with a few `skipped` is normal. You can run the
-installer again at any time; it reuses the existing environment.
-
-The installer was written for Windows but has not been run on a Windows
-machine by the authors. If it stops, it prints the reason; the manual steps
-below do the same thing.
-
-**Manual installation (PowerShell or cmd)** in the project folder:
+Установщик на настоящем Windows не проверялся. Если он не сработал, то же самое
+вручную в PowerShell, в папке проекта:
 
 ```powershell
 py -3 -m venv .venv
-```
-
-```powershell
 .\.venv\Scripts\python -m pip install -e ".[dev]"
-```
-
-```powershell
 .\.venv\Scripts\python -m pytest
 ```
 
-You do not need to "activate" the environment: `ppg.bat` runs the project's
-Python for you. `ppg scripts\run_estimation.py ...` in cmd is the same as
-`.\.venv\Scripts\python scripts\run_estimation.py ...`; in PowerShell write
-`.\ppg` instead of `ppg`. (If you prefer activation in PowerShell:
-`.\.venv\Scripts\Activate.ps1`; if Windows refuses to run scripts, run
-`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` once.)
+После установки скрипты запускаются через `ppg.bat` (в PowerShell `.\ppg`):
 
-**The board.** Install the [Arduino IDE](https://www.arduino.cc/en/software)
-2.x and follow [docs/arduino_guide_ru.md](docs/arduino_guide_ru.md) (Russian).
-Windows normally recognises the ESP32-S3's USB as a COM port without extra
-drivers. Boards with a separate USB-serial chip (CH340, CP210x) need the
-chip's driver from the board seller. The port appears in the Arduino IDE under
-**Tools → Port**, in Windows under **Device Manager → Ports (COM & LPT)**, and
-in the installer output or `ppg scripts\record_serial.py --list`.
-
-### macOS / Linux
-
-```bash
-git clone https://github.com/capitalisming/heart-beat.git
-cd heart-beat
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-python -m pytest
 ```
-
-Expected last line: `173 passed` (the C++ detector tests are skipped if no C++ compiler is installed).
-
-## 10. Usage
-
-The commands below are written for Windows (`ppg`, backslashes, `COM5`). On
-macOS/Linux activate the environment and use `python scripts/...` with a port
-such as `/dev/cu.usbmodem1101` or `/dev/ttyACM0`.
-
-**Try it without hardware** on a simulated recording:
-
-```bash
 ppg scripts\run_estimation.py data\sample\SYNTHETIC_rr12.csv --reference markers
 ```
 
+Должно получиться `RESPIRATORY RATE ... 12.0 breaths/min`. Файл в `data\sample`
+симулированный.
+
+macOS и Linux: `python3 -m venv .venv`, `source .venv/bin/activate`,
+`pip install -e ".[dev]"`, дальше `python scripts/...`.
+
+## Прошивка в Arduino IDE
+
+1. Установите [Arduino IDE 2.x](https://www.arduino.cc/en/software).
+2. **File, Preferences**, в поле *Additional boards manager URLs* добавьте
+   `https://espressif.github.io/arduino-esp32/package_esp32_index.json`.
+3. **Tools, Board, Boards Manager**: установите *esp32 by Espressif Systems*.
+4. **Sketch, Include Library, Manage Libraries**: установите
+   *SparkFun MAX3010x Pulse and Proximity Sensor Library*, *Adafruit SSD1306* и
+   *Adafruit GFX Library*.
+5. Откройте `hardware/firmware/arduino_monitor/arduino_monitor.ino`
+   (рядом должен лежать `BeatDetector.h`).
+6. В **Tools** выберите плату (например *ESP32S3 Dev Module*) и порт.
+   Если Serial Monitor потом пустой, включите **USB CDC On Boot**.
+7. Нажмите Upload. Если не загружается: зажать BOOT, нажать RESET, отпустить BOOT.
+8. **Tools, Serial Monitor**, скорость 115200.
+
+Положите палец на датчик. На экране появятся пульс и кривая, а в мониторе порта
+данные. Если будет ошибка компиляции, сначала проверьте, что все три библиотеки
+установлены.
+
+Настройки в начале скетча:
+
+- `SERIAL_MODE`: 0 это данные для записи (по умолчанию), 1 это подписанные
+  значения (`IR=... RED=... BPM=...`), 2 это формат для Serial Plotter
+- `FINGER_ON` и `FINGER_OFF`: пороги, по которым определяется палец; подберите
+  по значениям `IR` без пальца и с пальцем (режим 1)
+- `LED_CURRENT`: ток светодиодов, увеличьте, если пульс слабый
+- `OLED_ADDRESS`: 0x3C, у некоторых дисплеев 0x3D
+
+Подробная инструкция по-русски с таблицей неполадок:
+[docs/arduino_guide_ru.md](docs/arduino_guide_ru.md).
+
+## Запись и анализ
+
+Перед записью закройте Serial Monitor (порт может использовать одна программа) и
+поставьте `SERIAL_MODE 0`. Номер порта виден в Arduino IDE или в Диспетчере
+устройств (Порты COM и LPT):
+
 ```
-Recording : data\sample\SYNTHETIC_rr12.csv  (90.0 s, fs = 100.00 Hz)
-Pulses    : 102 detected, heart rate 68.2 bpm
-Windows   : 8 of 8 accepted
-RESPIRATORY RATE (median of accepted windows): 12.0 breaths/min [range 12.0-12.0]
-Signal quality index (median): 100 / 100  (a heuristic, not a probability)
-Reference (button marker): 12.0 breaths/min
-```
-
-Figures of every processing stage, `windows.csv` and `summary.json` are
-written to `results\runs\<name>\`.
-
-**Record from the device and analyse.** Close the Arduino IDE's Serial Monitor
-first: only one program can use the port.
-
-```bash
 ppg scripts\record_serial.py --list
-```
-
-```bash
 ppg scripts\record_serial.py --port COM5 --duration 180 --participant P01 --session S1 --condition rest --analyze
 ```
 
-**Evaluate a whole study against ground truth:**
+Во время записи помощник нажимает BOOT в начале каждого вдоха. После записи
+программа показывает частоту дыхания, пульс и эталон по нажатиям, а графики всех
+этапов сохраняет в `results\runs\...`.
 
-```bash
+Для серии записей составьте `data\manifest.csv` (пример: `data\sample\manifest.csv`):
+
+```
 ppg scripts\run_evaluation.py data\manifest.csv --outdir results\study --recording-figures
 ```
 
-**Re-run the synthetic verification:**
+В `results\study\report.md` будет отчёт: MAE, RMSE, смещение, корреляции и график
+Бланда-Альтмана.
 
-```bash
-ppg scripts\synthetic_verification.py
-```
+### Формат данных
 
-Useful options: `--feature am|am_detrended|bw|fm` to analyse another
-modulation, `--channel ir|red`, `--config <yaml>`. A poor signal produces a
-status and a reason instead of a number:
+Плата выдаёт CSV, 100 строк в секунду:
 
 ```
-STATUS: LOW QUALITY - no respiratory rate is reported
-  reason  : irregular pulse intervals [11 window(s)]
-  advice  : Repeat the measurement: keep the finger still, with light steady pressure on the sensor.
-```
-
-From Python:
-
-```python
-from ppg_resp.acquisition import load_recording
-from ppg_resp.config import load_settings
-from ppg_resp.pipeline import run_pipeline
-
-result = run_pipeline(load_recording("data/raw/P01_S1_rest.csv"), load_settings("config/settings.yaml"))
-print(result.summary())
-```
-
-## 11. Data Format
-
-**PPG recording** (CSV or TXT; `#` lines are comments). Firmware format:
-
-```csv
 sample_index,device_us,ir,red,marker
-0,2011934,118211,95310,0
+3334,176979269,52822,58361,0
 ```
 
-Also accepted: a time column (`timestamp_s`, `time_s`, `t`, or
-`timestamp_ms`) with a value column (`ppg`, `pleth`, `ir`, `red`, `value`),
-or headerless one-column (values; pass `--fs`) and two-column (seconds,
-value) files. Optional `<name>.meta.json` next to the file holds participant
-code, session, condition and notes.
+- `sample_index` номер отсчёта (пропуск значит потерю данных)
+- `device_us` время платы в микросекундах; по нему программа считает настоящую
+  частоту дискретизации
+- `ir`, `red` сырой сигнал двух светодиодов
+- `marker` равен 1 после нажатия BOOT (отметка вдоха)
 
-**Breath reference**, one of:
+Строки с `#` это сообщения платы, программа записи их пропускает.
 
-| Type | Content |
-|------|---------|
-| `markers` | The `marker` column of the recording (button press per breath) |
-| `events` | File with one breath time in seconds per line, column `breath_time_s` |
-| `waveform` | File with `time_s` and `resp` columns from an independent sensor |
-| `count` | Total breaths and the duration they were counted over |
+## Скриншоты
 
-**Study manifest**: one row per recording; example in
-[data/sample/manifest.csv](data/sample/manifest.csv), columns explained in
-[docs/experiment_protocol.md](docs/experiment_protocol.md#6-manifest).
+Вывод платы в Serial Monitor (настоящий скриншот с нашей платы):
 
-**Outputs**: `windows.csv` has one row per 32 s window with status, accepted
-rate, withheld candidate, all four method estimates, SQI and its components.
+![Serial Monitor](docs/images/serial_monitor.png)
 
-## 12. Signal Processing Pipeline
+Здесь `ir` почти не меняется (около 10 отсчётов из 52 000), то есть пульсовой
+волны в этом фрагменте нет: нужен плотный контакт пальца с датчиком.
 
-1. **Validate** timestamps and sampling rate; mark missing and saturated
-   samples; bridge only gaps ≤ 0.3 s.
-2. **Clean**: orient the signal (systole up), remove isolated spikes.
-3. **Filter** (zero-phase Butterworth): low-pass 8 Hz for measuring, band-pass
-   0.5–4 Hz for detecting.
-4. **Detect pulses** with a prominence threshold relative to the local
-   signal, so settings do not depend on sensor gain.
-5. **Peak-to-peak amplitude** `A_i = P_i − T_i`, each peak paired with its own
-   preceding trough; implausible beats rejected.
-6. **Respiratory signal**: interpolate the per-beat series to 4 Hz, no
-   extrapolation, long gaps left open.
-7. **Band-pass** 0.1–0.5 Hz (6–30 breaths/min, configurable).
-8. **Estimate** in 32 s windows: periodogram peak (primary), Welch PSD,
-   autocorrelation, peak counting. `RR = 60 · f_resp`.
-9. **Quality gate**: SQI 0–100 → `OK`, `LOW_QUALITY` or `INSUFFICIENT_DATA`.
+Следующие картинки построены на **симулированном** сигнале (120 с, дыхание
+12 в минуту), это не измерение человека.
 
-Example output of the stages (simulated signal):
+Найденные пульсовые волны: вершины P, впадины T и размах A = P - T.
 
-| | |
-|-|-|
-| ![Peaks](results/synthetic_verification/figures/example_recording/03_pulse_peaks.png) | ![Amplitude](results/synthetic_verification/figures/example_recording/04_pulse_amplitude.png) |
-| ![Respiratory band](results/synthetic_verification/figures/example_recording/06_respiratory_band.png) | ![Rate over time](results/synthetic_verification/figures/example_recording/07_rr_over_time.png) |
+![Пульсовые волны](results/synthetic_verification/figures/example_recording/03_pulse_peaks.png)
 
-## 13. Experimental Methodology
+Дыхательная составляющая, полученная из размаха волн, и отметки вдохов:
 
-Healthy adult volunteers, seated, fingertip on the sensor. Six conditions of
-180 s: quiet breathing, paced at 10, 15 and 20 breaths/min, and optionally
-supine and after repositioning the finger. An observer presses the board's
-button at every inhalation; the presses are recorded in the same stream as
-the PPG, which synchronises them by construction. A separate tally count
-backs up the button. No breath-holding or forced breathing.
+![Дыхательный сигнал](results/synthetic_verification/figures/example_recording/06_respiratory_band.png)
 
-Full protocol with safety, anonymisation, synchronisation and pre-specified
-analysis: [docs/experiment_protocol.md](docs/experiment_protocol.md).
+Фотографий собранного устройства в репозитории пока нет.
 
-## 14. Evaluation Metrics
+## Референсы
 
-With `error = estimate − reference` in breaths/min:
+1. Karlen W. et al. Multiparameter respiratory rate estimation from the photoplethysmogram. IEEE Trans Biomed Eng, 2013. doi:10.1109/TBME.2013.2246160
+2. Charlton P.H. et al. An assessment of algorithms to estimate respiratory rate from the electrocardiogram and photoplethysmogram. Physiol Meas, 2016. doi:10.1088/0967-3334/37/4/610
+3. Charlton P.H. et al. Breathing rate estimation from the electrocardiogram and photoplethysmogram: a review. IEEE Rev Biomed Eng, 2018. doi:10.1109/RBME.2017.2763681
+4. Meredith D.J. et al. Photoplethysmographic derivation of respiratory rate: a review of relevant physiology. J Med Eng Technol, 2012. doi:10.3109/03091902.2011.638965
+5. Allen J. Photoplethysmography and its application in clinical physiological measurement. Physiol Meas, 2007. doi:10.1088/0967-3334/28/3/R01
+6. Pimentel M.A.F. et al. Toward a robust estimation of respiratory rate from pulse oximeters. IEEE Trans Biomed Eng, 2017. doi:10.1109/TBME.2016.2613124
+7. Bland J.M., Altman D.G. Statistical methods for assessing agreement between two methods of clinical measurement. Lancet, 1986. doi:10.1016/S0140-6736(86)90837-8
+8. Bland J.M., Altman D.G. Agreement between methods of measurement with multiple observations per individual. J Biopharm Stat, 2007. doi:10.1080/10543400701329422
+9. Elgendi M. et al. Systolic peak detection in acceleration photoplethysmograms measured from emergency responders in tropical conditions. PLoS ONE, 2013. doi:10.1371/journal.pone.0076585
+10. Nilsson L.M. Respiration signals from photoplethysmography. Anesth Analg, 2013. doi:10.1213/ANE.0b013e31828098b2
+11. Addison P.S. et al. Developing an algorithm for pulse oximetry derived respiratory rate (RRoxi): a healthy volunteer study. J Clin Monit Comput, 2012. doi:10.1007/s10877-011-9332-y
+12. Welch P.D. The use of fast Fourier transform for the estimation of power spectra. IEEE Trans Audio Electroacoust, 1967. doi:10.1109/TAU.1967.1161901
 
-| Metric | Shows |
-|--------|-------|
-| MAE, RMSE | Typical size of the error |
-| Bias, SD of error | Systematic offset and scatter |
-| Bland–Altman limits of agreement | Range containing ~95 % of differences; plot reveals rate-dependent error |
-| Pearson r, Spearman ρ | Association only, reported with the range of rates |
-| Accepted fraction | How much data the quality gate kept |
+Железо и библиотеки: даташит MAX30102 (Maxim Integrated),
+[SparkFun MAX3010x library](https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library),
+[Adafruit SSD1306](https://github.com/adafruit/Adafruit_SSD1306),
+[Adafruit GFX](https://github.com/adafruit/Adafruit-GFX-Library).
 
-Overlapping windows of one recording are not treated as independent: the
-recording is the unit of inference, clustered by participant, and confidence
-intervals are only given with at least 6 participants. Details:
-[docs/methodology.md §6](docs/methodology.md#6-statistics).
-
-## 15. Results
-
-### Real recordings
-
-**None yet.** No recording with an independent breath reference has been
-analysed, so there is no answer to the research question in this repository.
-When recordings exist, `scripts/run_evaluation.py` produces the report,
-tables and figures for this section.
-
-### Verification on simulated signals
-
-These numbers show that the software recovers a known rate from a model
-signal. **They are not the accuracy of the method on people.**
-
-| Check | Result |
-|-------|--------|
-| 8 simulated participants × 5 rates (8–24 /min), 120 s each, 40 recordings | Recording-level MAE 0.003 breaths/min, bias 0.000; 440 of 440 windows accepted |
-| Pulses with no respiratory modulation (264 windows) | 4.9 % wrongly accepted by the quality gate |
-| Noise SD 0.10 of pulse height (10 % modulation) | 100 % accepted, MAE 0.11 |
-| Noise SD 0.20 | 72 % accepted, MAE 0.22 |
-| Noise SD 0.40 | 11 % accepted, MAE 0.50 |
-| Breathing faster than half the heart rate | Aliases to a wrong rate with a high SQI (known limitation, kept as a test) |
-
-The near-zero error reflects a simulator with a perfectly steady breathing
-rate and white noise. Real signals are harder. Full report:
-[results/synthetic_verification/report.md](results/synthetic_verification/report.md).
-
-## 16. Limitations
-
-- No recordings with ground truth yet.
-- Amplitude modulation is weak or absent in some people and conditions.
-- Peak-to-peak amplitude also picks up baseline wander.
-- Breathing above half the heart rate is aliased and undetectable as such.
-- Fixed 6–30 breaths/min band; steady rate assumed within 32 s.
-- Sensitive to finger motion and contact pressure.
-- The quality threshold is calibrated on simulations only.
-- A button-press reference has reaction-time jitter and can miss breaths.
-
-Complete list: [docs/limitations.md](docs/limitations.md).
-
-## 17. Reproducibility
-
-- All parameters live in [config/settings.yaml](config/settings.yaml); the
-  configuration is validated before any data is processed.
-- Raw recordings are never modified; every result is recomputed from them.
-- Simulations use fixed random seeds; `scripts/synthetic_verification.py`
-  regenerates `results/synthetic_verification/` and `data/sample/`.
-- `python -m pytest` runs 173 tests covering each module, the on-device beat
-  detector (compiled from the sketch's own header), the serial stream format
-  against the sketch, the listed edge
-  cases (empty files, gaps, irregular timestamps, wrong sampling rate,
-  artifacts, no pulse, no modulation) and the statistics.
-- The experiment is specified in advance in
-  [docs/experiment_protocol.md](docs/experiment_protocol.md).
-
-## 18. Future Improvements
-
-1. Complete the bring-up checklist on the built device and add photographs.
-2. Run the experiment and fill in the Results section.
-3. Calibrate the SQI threshold on real data, with separate tuning and test
-   participants.
-4. Test on the public BIDMC dataset (`scripts/prepare_bidmc.py`; prepared,
-   not run) as an independent check on real PPG.
-5. Add a respiratory belt as a second, automatic reference.
-6. A fingertip cradle to stabilise contact pressure.
-7. Compare AM with BW and FM on the same recordings, and only then consider
-   fusing them [1].
-
-
-
-## 19. References
-
-1. Karlen W, Raman S, Ansermino JM, Dumont GA. Multiparameter respiratory rate estimation from the photoplethysmogram. *IEEE Trans Biomed Eng.* 2013;60(7):1946–1953. doi:10.1109/TBME.2013.2246160
-2. Charlton PH, Bonnici T, Tarassenko L, Clifton DA, Beale R, Watkinson PJ. An assessment of algorithms to estimate respiratory rate from the electrocardiogram and photoplethysmogram. *Physiol Meas.* 2016;37(4):610–626. doi:10.1088/0967-3334/37/4/610
-3. Charlton PH, Birrenkott DA, Bonnici T, et al. Breathing rate estimation from the electrocardiogram and photoplethysmogram: a review. *IEEE Rev Biomed Eng.* 2018;11:2–20. doi:10.1109/RBME.2017.2763681
-4. Meredith DJ, Clifton D, Charlton P, Brooks J, Pugh CW, Tarassenko L. Photoplethysmographic derivation of respiratory rate: a review of relevant physiology. *J Med Eng Technol.* 2012;36(1):1–7. doi:10.3109/03091902.2011.638965
-5. Allen J. Photoplethysmography and its application in clinical physiological measurement. *Physiol Meas.* 2007;28(3):R1–R39. doi:10.1088/0967-3334/28/3/R01
-6. Pimentel MAF, Johnson AEW, Charlton PH, et al. Toward a robust estimation of respiratory rate from pulse oximeters. *IEEE Trans Biomed Eng.* 2017;64(8):1914–1923. doi:10.1109/TBME.2016.2613124
-7. Bland JM, Altman DG. Statistical methods for assessing agreement between two methods of clinical measurement. *Lancet.* 1986;327(8476):307–310. doi:10.1016/S0140-6736(86)90837-8
-8. Bland JM, Altman DG. Agreement between methods of measurement with multiple observations per individual. *J Biopharm Stat.* 2007;17(4):571–582. doi:10.1080/10543400701329422
-9. Elgendi M, Norton I, Brearley M, Abbott D, Schuurmans D. Systolic peak detection in acceleration photoplethysmograms measured from emergency responders in tropical conditions. *PLoS ONE.* 2013;8(10):e76585. doi:10.1371/journal.pone.0076585
-10. Nilsson LM. Respiration signals from photoplethysmography. *Anesth Analg.* 2013;117(4):859–865. doi:10.1213/ANE.0b013e31828098b2
-11. Addison PS, Watson JN, Mestek ML, Mecca RS. Developing an algorithm for pulse oximetry derived respiratory rate (RRoxi): a healthy volunteer study. *J Clin Monit Comput.* 2012;26(1):45–51. doi:10.1007/s10877-011-9332-y
-12. Welch PD. The use of fast Fourier transform for the estimation of power spectra: a method based on time averaging over short, modified periodograms. *IEEE Trans Audio Electroacoust.* 1967;15(2):70–73. doi:10.1109/TAU.1967.1161901
-
-Sensor and tools: Maxim Integrated, *MAX30102 High-Sensitivity Pulse
-Oximeter and Heart-Rate Sensor for Wearable Health* (datasheet); Arduino IDE,
-<https://www.arduino.cc/en/software>; SparkFun MAX3010x Sensor Library,
-<https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library>; Adafruit SSD1306,
-<https://github.com/adafruit/Adafruit_SSD1306>; Adafruit GFX,
-<https://github.com/adafruit/Adafruit-GFX-Library>.
-Optional dataset: BIDMC PPG and Respiration Dataset, <https://physionet.org/content/bidmc/> [6].
+Проект учебный, не является медицинским устройством.
