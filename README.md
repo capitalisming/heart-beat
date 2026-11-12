@@ -1,87 +1,88 @@
 # PPG Respiratory Estimator
 
-Определяем частоту дыхания по пульсовому датчику, без отдельного датчика дыхания.
-Железо: ESP32-S3 и MAX30102, обработка на Python.
+Estimating breathing rate from a pulse sensor, without a separate breathing sensor.
+Hardware: ESP32-S3 and MAX30102, processing in Python.
 
-## О чём проект
+## About the project
 
-MAX30102 светит красным и инфракрасным светом в палец и измеряет, сколько света
-вернулось. Это сигнал фотоплетизмограммы (PPG): на нём видна каждая пульсовая
-волна. Дыхание немного меняет этот сигнал, в том числе высоту пульсовых волн.
-Если измерить высоту каждой волны и посмотреть, как она растёт и падает со
-временем, из этого ритма можно получить частоту дыхания.
+The MAX30102 shines red and infrared light into a finger and measures how much
+comes back. This is a photoplethysmogram (PPG): every pulse wave is visible in
+it. Breathing changes the signal slightly, including the height of the pulse
+waves. If we measure the height of every wave and watch how it rises and falls
+over time, we can get the breathing rate from that rhythm.
 
-Что делает программа:
+What the program does:
 
-1. Плата читает датчик (100 отсчётов в секунду) и отправляет данные на компьютер.
-2. Python фильтрует сигнал и находит пульсовые волны.
-3. Для каждой волны считается размах `A = P - T` (вершина минус впадина перед ней).
-4. Ряд `A` приводится к равномерной сетке и фильтруется в диапазоне дыхания
-   (0.1-0.5 Гц, то есть 6-30 вдохов в минуту).
-5. Частота дыхания берётся по главному пику спектра в окне 32 с.
-6. Результат сравнивается с независимым подсчётом вдохов.
+1. The board reads the sensor (100 samples per second) and sends the data to the computer.
+2. Python filters the signal and finds the pulse waves.
+3. For each wave it computes the peak-to-peak amplitude `A = P - T` (the peak minus
+   the trough before it).
+4. The series of `A` values is resampled to a uniform grid and filtered to the
+   breathing band (0.1-0.5 Hz, i.e. 6-30 breaths per minute).
+5. The breathing rate is the main spectral peak in a 32 s window.
+6. The result is compared with an independent count of breaths.
 
-Если сигнал плохой, программа не выдаёт число, а пишет причину (`LOW QUALITY`
-или `INSUFFICIENT DATA`).
+If the signal is poor, the program does not print a number but a reason
+(`LOW QUALITY` or `INSUFFICIENT DATA`).
 
-На плате есть ещё экран: если подключить OLED 0.96", на нём показывается пульс и
-бегущая кривая, как на больничном мониторе. Этот пульс считается упрощённо и
-только для показа.
+The board can also drive a screen: with a 0.96" OLED connected it shows the heart
+rate and a scrolling pulse waveform, like a hospital monitor. That heart rate is
+computed in a simplified way and is only for display.
 
-## Исследовательский вопрос
+## Research question
 
-**Насколько хорошо модуляция размаха пульсовых волн (peak-to-peak) совпадает с
-реальным количеством вдохов?**
+**How well does the peak-to-peak modulation of the pulse waves agree with the
+actual number of breaths?**
 
-Совпадение мы смотрим не только по корреляции, но и по ошибке (MAE, RMSE), смещению
-и графику Бланда-Альтмана: корреляция может быть высокой, а числа всё равно
-неверными.
+We judge agreement not only by correlation but also by error (MAE, RMSE), bias and
+a Bland-Altman plot: correlation can be high while the numbers are still wrong.
 
-Эталон дыхания: помощник нажимает кнопку BOOT на плате в начале каждого вдоха.
-Нажатия пишутся в тот же поток, что и сигнал, поэтому отдельная синхронизация не
-нужна. Подробный протокол измерений: [docs/experiment_protocol.md](docs/experiment_protocol.md).
+Reference for breathing: a helper presses the BOOT button on the board at the start
+of every inhalation. The presses are recorded in the same stream as the signal, so
+no separate synchronisation is needed. Full measurement protocol:
+[docs/experiment_protocol.md](docs/experiment_protocol.md).
 
-**Статус.** Измерений на людях с эталоном пока нет, поэтому ответа на вопрос нет.
-На симулированных сигналах программа находит заданную частоту, но это проверка кода,
-а не точности метода. Версия скетча с OLED-экраном пока не подтверждена на плате
-(детектор пульса проверен только на компьютере). Ограничения:
-[docs/limitations.md](docs/limitations.md).
+**Status.** There are no measurements on people with a reference yet, so the question
+is not answered. On simulated signals the program finds the set breathing rate, but
+that checks the code, not the accuracy of the method. The version of the sketch with
+the OLED screen has not been confirmed on the board yet (the heart-rate detector was
+only tested on a computer). Limitations: [docs/limitations.md](docs/limitations.md).
 
-## Что нужно
+## What you need
 
-- плата с ESP32-S3
-- датчик MAX30102
-- OLED 0.96" SSD1306 128x64, I2C (по желанию)
-- макетная плата, провода, USB-кабель с передачей данных
-- Windows 10 или 11, Python, Arduino IDE
+- a board with an ESP32-S3
+- a MAX30102 sensor
+- a 0.96" SSD1306 OLED, 128x64, I2C (optional)
+- breadboard, jumper wires, a USB cable that carries data
+- Windows 10 or 11, Python, Arduino IDE
 
-Подключение (OLED подключается параллельно датчику, к тем же GPIO 8 и 9):
+Wiring (the OLED is connected in parallel with the sensor, to the same GPIO 8 and 9):
 
 | MAX30102 | OLED | ESP32-S3 |
 |----------|------|----------|
-| VIN | VCC | 3V3 (не 5V) |
+| VIN | VCC | 3V3 (not 5V) |
 | GND | GND | GND |
 | SDA | SDA | GPIO 8 |
 | SCL | SCL | GPIO 9 |
 
-Схема: [hardware/wiring_diagram/wiring.svg](hardware/wiring_diagram/wiring.svg).
-Если у вашей платы I2C на других контактах, измените `PIN_I2C_SDA` и `PIN_I2C_SCL`
-в начале скетча.
+Diagram: [hardware/wiring_diagram/wiring.svg](hardware/wiring_diagram/wiring.svg).
+If your board has I2C on other pins, change `PIN_I2C_SDA` and `PIN_I2C_SCL` at the
+top of the sketch.
 
-## Установка на Windows
+## Installation on Windows
 
-1. Установите Python 3.12 или 3.13 с [python.org](https://www.python.org/downloads/windows/).
-   В установщике отметьте галочку **Add python.exe to PATH**.
-2. Скачайте проект: на странице GitHub **Code, Download ZIP**, и распакуйте.
-   Или `git clone https://github.com/capitalisming/heart-beat.git`.
-3. Дважды щёлкните `install_windows.bat`.
+1. Install Python 3.12 or 3.13 from [python.org](https://www.python.org/downloads/windows/).
+   In the installer tick **Add python.exe to PATH**.
+2. Get the project: on the GitHub page press **Code, Download ZIP** and extract it.
+   Or `git clone https://github.com/capitalisming/heart-beat.git`.
+3. Double-click `install_windows.bat`.
 
-Установщик создаёт папку `.venv`, ставит пакеты (нужен интернет), запускает тесты
-и пробный пример на симулированном сигнале. На Windows часть тестов пропускается
-(нужен компилятор C++), это нормально.
+The installer creates a `.venv` folder, installs the packages (internet needed),
+and runs the tests and a demo on a simulated signal. On Windows some tests are
+skipped (they need a C++ compiler); that is normal.
 
-Установщик на настоящем Windows не проверялся. Если он не сработал, то же самое
-вручную в PowerShell, в папке проекта:
+The installer has not been tested on a real Windows machine. If it does not work,
+do the same by hand in PowerShell, in the project folder:
 
 ```powershell
 py -3 -m venv .venv
@@ -89,114 +90,114 @@ py -3 -m venv .venv
 .\.venv\Scripts\python -m pytest
 ```
 
-После установки скрипты запускаются через `ppg.bat` (в PowerShell `.\ppg`):
+After installing, run scripts through `ppg.bat` (in PowerShell: `.\ppg`):
 
 ```
 ppg scripts\run_estimation.py data\sample\SYNTHETIC_rr12.csv --reference markers
 ```
 
-Должно получиться `RESPIRATORY RATE ... 12.0 breaths/min`. Файл в `data\sample`
-симулированный.
+You should get `RESPIRATORY RATE ... 12.0 breaths/min`. The file in `data\sample`
+is simulated.
 
-macOS и Linux: `python3 -m venv .venv`, `source .venv/bin/activate`,
-`pip install -e ".[dev]"`, дальше `python scripts/...`.
+macOS and Linux: `python3 -m venv .venv`, `source .venv/bin/activate`,
+`pip install -e ".[dev]"`, then `python scripts/...`.
 
-## Прошивка в Arduino IDE
+## Firmware in Arduino IDE
 
-1. Установите [Arduino IDE 2.x](https://www.arduino.cc/en/software).
-2. **File, Preferences**, в поле *Additional boards manager URLs* добавьте
+1. Install [Arduino IDE 2.x](https://www.arduino.cc/en/software).
+2. **File, Preferences**, in *Additional boards manager URLs* add
    `https://espressif.github.io/arduino-esp32/package_esp32_index.json`.
-3. **Tools, Board, Boards Manager**: установите *esp32 by Espressif Systems*.
-4. **Sketch, Include Library, Manage Libraries**: установите
-   *SparkFun MAX3010x Pulse and Proximity Sensor Library*, *Adafruit SSD1306* и
+3. **Tools, Board, Boards Manager**: install *esp32 by Espressif Systems*.
+4. **Sketch, Include Library, Manage Libraries**: install
+   *SparkFun MAX3010x Pulse and Proximity Sensor Library*, *Adafruit SSD1306* and
    *Adafruit GFX Library*.
-5. Откройте `hardware/firmware/arduino_monitor/arduino_monitor.ino`
-   (рядом должен лежать `BeatDetector.h`).
-6. В **Tools** выберите плату (например *ESP32S3 Dev Module*) и порт.
-   Если Serial Monitor потом пустой, включите **USB CDC On Boot**.
-7. Нажмите Upload. Если не загружается: зажать BOOT, нажать RESET, отпустить BOOT.
-8. **Tools, Serial Monitor**, скорость 115200.
+5. Open `hardware/firmware/arduino_monitor/arduino_monitor.ino`
+   (`BeatDetector.h` must be next to it).
+6. In **Tools** select the board (for example *ESP32S3 Dev Module*) and the port.
+   If the Serial Monitor stays empty afterwards, enable **USB CDC On Boot**.
+7. Press Upload. If it does not start: hold BOOT, press RESET, release BOOT.
+8. **Tools, Serial Monitor**, speed 115200.
 
-Положите палец на датчик. На экране появятся пульс и кривая, а в мониторе порта
-данные. Если будет ошибка компиляции, сначала проверьте, что все три библиотеки
-установлены.
+Put a finger on the sensor. The screen shows the heart rate and the waveform, and
+the serial monitor shows the data. If compilation fails, first check that all three
+libraries are installed.
 
-Настройки в начале скетча:
+Settings at the top of the sketch:
 
-- `SERIAL_MODE`: 0 это данные для записи (по умолчанию), 1 это подписанные
-  значения (`IR=... RED=... BPM=...`), 2 это формат для Serial Plotter
-- `FINGER_ON` и `FINGER_OFF`: пороги, по которым определяется палец; подберите
-  по значениям `IR` без пальца и с пальцем (режим 1)
-- `LED_CURRENT`: ток светодиодов, увеличьте, если пульс слабый
-- `OLED_ADDRESS`: 0x3C, у некоторых дисплеев 0x3D
+- `SERIAL_MODE`: 0 is data for recording (default), 1 is labelled values
+  (`IR=... RED=... BPM=...`), 2 is the format for the Serial Plotter
+- `FINGER_ON` and `FINGER_OFF`: thresholds for detecting a finger; set them from
+  the `IR` values without and with a finger (mode 1)
+- `LED_CURRENT`: LED current, increase it if the pulse is weak
+- `OLED_ADDRESS`: 0x3C, some displays use 0x3D
 
-Подробная инструкция по-русски с таблицей неполадок:
+A detailed guide in Russian with a troubleshooting table:
 [docs/arduino_guide_ru.md](docs/arduino_guide_ru.md).
 
-## Запись и анализ
+## Recording and analysis
 
-Перед записью закройте Serial Monitor (порт может использовать одна программа) и
-поставьте `SERIAL_MODE 0`. Номер порта виден в Arduino IDE или в Диспетчере
-устройств (Порты COM и LPT):
+Before recording, close the Serial Monitor (only one program can use the port) and
+set `SERIAL_MODE 0`. The port number is shown in Arduino IDE or in Device Manager
+(Ports, COM & LPT):
 
 ```
 ppg scripts\record_serial.py --list
 ppg scripts\record_serial.py --port COM5 --duration 180 --participant P01 --session S1 --condition rest --analyze
 ```
 
-Во время записи помощник нажимает BOOT в начале каждого вдоха. После записи
-программа показывает частоту дыхания, пульс и эталон по нажатиям, а графики всех
-этапов сохраняет в `results\runs\...`.
+During the recording the helper presses BOOT at the start of every inhalation.
+Afterwards the program prints the breathing rate, the heart rate and the reference
+from the presses, and saves figures of every stage to `results\runs\...`.
 
-Для серии записей составьте `data\manifest.csv` (пример: `data\sample\manifest.csv`):
+For a series of recordings write `data\manifest.csv` (example: `data\sample\manifest.csv`):
 
 ```
 ppg scripts\run_evaluation.py data\manifest.csv --outdir results\study --recording-figures
 ```
 
-В `results\study\report.md` будет отчёт: MAE, RMSE, смещение, корреляции и график
-Бланда-Альтмана.
+`results\study\report.md` will contain the report: MAE, RMSE, bias, correlations and
+the Bland-Altman plot.
 
-### Формат данных
+### Data format
 
-Плата выдаёт CSV, 100 строк в секунду:
+The board outputs CSV, 100 lines per second:
 
 ```
 sample_index,device_us,ir,red,marker
 3334,176979269,52822,58361,0
 ```
 
-- `sample_index` номер отсчёта (пропуск значит потерю данных)
-- `device_us` время платы в микросекундах; по нему программа считает настоящую
-  частоту дискретизации
-- `ir`, `red` сырой сигнал двух светодиодов
-- `marker` равен 1 после нажатия BOOT (отметка вдоха)
+- `sample_index` is the sample number (a gap means lost data)
+- `device_us` is the board time in microseconds; the program uses it to compute the
+  real sampling rate
+- `ir`, `red` are the raw signals of the two LEDs
+- `marker` is 1 after BOOT was pressed (breath mark)
 
-Строки с `#` это сообщения платы, программа записи их пропускает.
+Lines starting with `#` are messages from the board; the recorder skips them.
 
-## Скриншоты
+## Screenshots
 
-Вывод платы в Serial Monitor (настоящий скриншот с нашей платы):
+Output of the board in the Serial Monitor (a real screenshot from our board):
 
 ![Serial Monitor](docs/images/serial_monitor.png)
 
-Здесь `ir` почти не меняется (около 10 отсчётов из 52 000), то есть пульсовой
-волны в этом фрагменте нет: нужен плотный контакт пальца с датчиком.
+Here `ir` hardly changes (about 10 counts out of 52 000), so there is no pulse wave
+in this fragment: the finger needs good contact with the sensor.
 
-Следующие картинки построены на **симулированном** сигнале (120 с, дыхание
-12 в минуту), это не измерение человека.
+The next pictures are made from a **simulated** signal (120 s, breathing 12 per
+minute); they are not a measurement of a person.
 
-Найденные пульсовые волны: вершины P, впадины T и размах A = P - T.
+Detected pulse waves: peaks P, troughs T and the amplitude A = P - T.
 
-![Пульсовые волны](results/synthetic_verification/figures/example_recording/03_pulse_peaks.png)
+![Pulse waves](results/synthetic_verification/figures/example_recording/03_pulse_peaks.png)
 
-Дыхательная составляющая, полученная из размаха волн, и отметки вдохов:
+The breathing component obtained from the wave amplitude, with the breath marks:
 
-![Дыхательный сигнал](results/synthetic_verification/figures/example_recording/06_respiratory_band.png)
+![Breathing signal](results/synthetic_verification/figures/example_recording/06_respiratory_band.png)
 
-Фотографий собранного устройства в репозитории пока нет.
+There are no photos of the assembled device in the repository yet.
 
-## Референсы
+## References
 
 1. Karlen W. et al. Multiparameter respiratory rate estimation from the photoplethysmogram. IEEE Trans Biomed Eng, 2013. doi:10.1109/TBME.2013.2246160
 2. Charlton P.H. et al. An assessment of algorithms to estimate respiratory rate from the electrocardiogram and photoplethysmogram. Physiol Meas, 2016. doi:10.1088/0967-3334/37/4/610
@@ -211,9 +212,9 @@ sample_index,device_us,ir,red,marker
 11. Addison P.S. et al. Developing an algorithm for pulse oximetry derived respiratory rate (RRoxi): a healthy volunteer study. J Clin Monit Comput, 2012. doi:10.1007/s10877-011-9332-y
 12. Welch P.D. The use of fast Fourier transform for the estimation of power spectra. IEEE Trans Audio Electroacoust, 1967. doi:10.1109/TAU.1967.1161901
 
-Железо и библиотеки: даташит MAX30102 (Maxim Integrated),
+Hardware and libraries: MAX30102 datasheet (Maxim Integrated),
 [SparkFun MAX3010x library](https://github.com/sparkfun/SparkFun_MAX3010x_Sensor_Library),
 [Adafruit SSD1306](https://github.com/adafruit/Adafruit_SSD1306),
 [Adafruit GFX](https://github.com/adafruit/Adafruit-GFX-Library).
 
-Проект учебный, не является медицинским устройством.
+A student project, not a medical device.
